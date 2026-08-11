@@ -16,7 +16,10 @@ WORKDIR /repo
 COPY package.json package-lock.json ./
 COPY apps/web/package.json apps/web/package.json
 
-RUN npm ci
+# Use `npm install` (not `npm ci`): the committed lockfile was generated on
+# Windows and only records the win32 lightningcss native binary, so `npm ci`
+# on Linux/Alpine cannot resolve the platform-correct optional dependency.
+RUN npm install --no-audit --no-fund
 
 # ---------------------------------------------------------------------------
 # Stage 2: Builder
@@ -28,7 +31,7 @@ WORKDIR /repo
 COPY package.json package-lock.json ./
 COPY apps apps
 
-RUN npm ci
+RUN npm install --no-audit --no-fund
 
 ENV NEXT_TELEMETRY_DISABLED=1 \
     NODE_ENV=production
