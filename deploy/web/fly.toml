@@ -13,8 +13,9 @@ primary_region = "iad"
 
 [build]
   # Dockerfile lives in deploy/web/, but builds from the repo ROOT so npm
-  # workspaces + the root lockfile resolve.
-  dockerfile = "deploy/web/Dockerfile"
+  # workspaces + the root lockfile resolve. dockerfile is resolved relative to
+  # this fly.toml; the build context is the directory flyctl runs from.
+  dockerfile = "Dockerfile"
 
 [nixpacks]
   # ensure we don't accidentally switch to nixpacks
