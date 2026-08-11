@@ -31,7 +31,9 @@ WORKDIR /repo
 COPY package.json package-lock.json ./
 COPY apps apps
 
-RUN npm install --no-audit --no-fund
+# Drop the win32-locked lockfile and resolve fresh on Linux/Alpine so npm
+# installs the platform-correct optional deps (e.g. lightningcss musl binary).
+RUN rm -f package-lock.json && npm install --no-audit --no-fund
 
 ENV NEXT_TELEMETRY_DISABLED=1 \
     NODE_ENV=production
