@@ -1,0 +1,77 @@
+name: Deploy
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+concurrency:
+  group: deploy-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  deploy-api:
+    runs-on: ubuntu-latest
+    environment: production
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: superfly/flyctl-actions/setup-flyctl@master
+
+      - name: Create app if missing
+        run: flyctl apps create socialnova-api --org personal || echo "app already exists"
+        env:
+          FLY_API_TOKEN: ${{ secrets.FLY_API_TOKEN }}
+
+      - name: Attach postgres
+        run: flyctl postgres attach socialnova-db --app socialnova-api --database-user socialnova_app --yes || echo "already attached"
+        env:
+          FLY_API_TOKEN: ${{ secrets.FLY_API_TOKEN }}
+
+      - name: Create uploads volume
+        run: flyctl volumes create uploads --app socialnova-api --size 1 --region iad --yes || echo "volume already exists"
+        env:
+          FLY_API_TOKEN: ${{ secrets.FLY_API_TOKEN }}
+
+      - name: Set secrets
+        run: |
+          flyctl secrets set "JWT_SECRET=${{ secrets.JWT_SECRET }}" --app socialnova-api --detach
+          flyctl secrets set "SECRET_KEY=${{ secrets.SECRET_KEY }}" --app socialnova-api --detach
+        env:
+          FLY_API_TOKEN: ${{ secrets.FLY_API_TOKEN }}
+
+      - name: Deploy API
+        working-directory: apps/api
+        run: flyctl deploy --config ../../deploy/api/fly.toml --remote-only --yes
+        env:
+          FLY_API_TOKEN: ${{ secrets.FLY_API_TOKEN }}
+
+  deploy-web:
+    runs-on: ubuntu-latest
+    environment: production
+    needs: deploy-api
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: superfly/flyctl-actions/setup-flyctl@master
+
+      - name: Create app if missing
+        run: flyctl apps create socialnova-web --org personal || echo "app already exists"
+        env:
+          FLY_API_TOKEN: ${{ secrets.FLY_API_TOKEN }}
+
+      - name: Set secrets
+        run: flyctl secrets set "NOVA_API_URL=https://socialnova-api.fly.dev" --app socialnova-web --detach
+        env:
+          FLY_API_TOKEN: ${{ secrets.FLY_API_TOKEN }}
+
+      - name: Scale memory
+        run: flyctl scale memory 1024 -a socialnova-web || true
+        env:
+          FLY_API_TOKEN: ${{ secrets.FLY_API_TOKEN }}
+
+      - name: Deploy Web
+        working-directory: .
+        run: flyctl deploy --config deploy/web/fly.toml --remote-only --yes
+        env:
+          FLY_API_TOKEN: ${{ secrets.FLY_API_TOKEN }}
