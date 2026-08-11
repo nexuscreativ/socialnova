@@ -1,10 +1,10 @@
 "use client"
-import { useEffect } from "react"
+import { useEffect, useState } from "react"
 import Link from "next/link"
 import { usePathname } from "next/navigation"
 import { X } from "lucide-react"
 import { cn } from "@/lib/utils"
-import { navigation, bottomNavigation } from "./sidebar-nav"
+import { navigation, bottomNavigation, type NavItem } from "./sidebar-nav"
 
 export function MobileSidebar({
   open,
@@ -14,6 +14,27 @@ export function MobileSidebar({
   onClose: () => void
 }) {
   const pathname = usePathname()
+  const [isAdmin, setIsAdmin] = useState<boolean | null>(null)
+
+  useEffect(() => {
+    let cancelled = false
+    fetch("/api/auth/me")
+      .then(r => (r.ok ? r.json() : Promise.resolve({ user: {} })))
+      .then(me => {
+        if (cancelled) return
+        const role = me?.user?.role ?? me?.role ?? "user"
+        setIsAdmin(role === "admin" || role === "superadmin")
+      })
+      .catch(() => {
+        if (!cancelled) setIsAdmin(false)
+      })
+    return () => {
+      cancelled = true
+    }
+  }, [])
+
+  const visible = (items: NavItem[]) =>
+    items.filter(item => !item.adminOnly || isAdmin === true)
 
   useEffect(() => {
     if (!open) return
@@ -100,11 +121,11 @@ export function MobileSidebar({
         </div>
 
         <nav className="flex-1 px-3 py-2">
-          <div className="space-y-1">{navigation.map(renderItem)}</div>
+          <div className="space-y-1">{visible(navigation).map(renderItem)}</div>
         </nav>
 
         <div className="border-t p-3" style={{ borderColor: "var(--border-default)" }}>
-          <div className="space-y-1">{bottomNavigation.map(renderItem)}</div>
+          <div className="space-y-1">{visible(bottomNavigation).map(renderItem)}</div>
         </div>
       </aside>
     </>

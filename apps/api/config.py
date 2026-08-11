@@ -2,9 +2,10 @@
 # SocialNova API - Enhanced Configuration
 # =============================================================================
 
-from pydantic_settings import BaseSettings
+from pydantic_settings import BaseSettings, NoDecode
+from pydantic import field_validator
 from functools import lru_cache
-from typing import Optional
+from typing import Optional, Annotated
 import os
 
 class Settings(BaseSettings):
@@ -97,10 +98,28 @@ class Settings(BaseSettings):
     # -------------------------------------------------------------------------
     # Security
     # -------------------------------------------------------------------------
-    ADMIN_EMAILS: list[str] = []
+    # Emails that are automatically promoted to `superadmin` at startup. Any
+    # existing user whose email is listed is elevated on every boot; use this
+    # as the durable source of truth for admin identity. NoDecode keeps env
+    # values as raw strings (comma-separated) instead of forcing JSON.
+    ADMIN_EMAILS: Annotated[list[str], NoDecode] = []
+    # Optional first-boot bootstrap: if ADMIN_EMAIL is set and no user exists
+    # for it, `init_db()` creates a verified superadmin with ADMIN_PASSWORD.
+    # Only used when the user is absent; existing accounts are never
+    # overwritten with these credentials.
+    ADMIN_EMAIL: Optional[str] = None
+    ADMIN_PASSWORD: Optional[str] = None
     ALLOWED_HOSTS: list[str] = ["*"]
     SECRET_KEY_ROTATION_DAYS: int = 90
     API_KEY_EXPIRY_DAYS: int = 365
+
+    @field_validator("ADMIN_EMAILS", mode="before")
+    @classmethod
+    def _split_admin_emails(cls, v):
+        """Accept a comma-separated env string or a JSON list."""
+        if isinstance(v, str):
+            return [e.strip() for e in v.split(",") if e.strip()]
+        return v
 
     # -------------------------------------------------------------------------
     # Logging

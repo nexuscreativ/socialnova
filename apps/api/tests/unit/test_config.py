@@ -28,3 +28,17 @@ class TestSecretKeyGuard:
     def test_production_with_strong_key_passes_guard(self):
         s = Settings(APP_ENV="production", SECRET_KEY="random-strong-secret")
         assert s.is_production() and s.has_secure_secret_key()
+
+
+class TestAdminEmailsParsing:
+    def test_comma_separated_env_string(self):
+        s = Settings(ADMIN_EMAILS="a@x.com, b@x.com ,c@x.com")
+        assert s.ADMIN_EMAILS == ["a@x.com", "b@x.com", "c@x.com"]
+
+    def test_list_value_passthrough(self):
+        s = Settings(ADMIN_EMAILS=["a@x.com", "b@x.com"])
+        assert s.ADMIN_EMAILS == ["a@x.com", "b@x.com"]
+
+    def test_empty_string(self):
+        s = Settings(ADMIN_EMAILS="")
+        assert s.ADMIN_EMAILS == []

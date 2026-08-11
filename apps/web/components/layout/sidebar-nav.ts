@@ -15,6 +15,7 @@ export interface NavItem {
   name: string
   href: string
   icon: LucideIcon
+  adminOnly?: boolean
 }
 
 export const navigation: NavItem[] = [
@@ -28,6 +29,6 @@ export const navigation: NavItem[] = [
 
 export const bottomNavigation: NavItem[] = [
   { name: "Settings", href: "/settings", icon: Settings },
-  { name: "Admin", href: "/admin", icon: ShieldCheck },
+  { name: "Admin", href: "/admin", icon: ShieldCheck, adminOnly: true },
   { name: "Help", href: "/help", icon: HelpCircle },
 ]

@@ -78,6 +78,19 @@ interface Endpoint {
   methods: string[] | null
 }
 
+interface AuditEntry {
+  id: string
+  action: string
+  user_id: string | null
+  user_email: string | null
+  resource_type: string | null
+  resource_id: string | null
+  details: Record<string, unknown> | null
+  ip_address: string | null
+  user_agent: string | null
+  created_at: string | null
+}
+
 async function fetchJson(url: string, init?: RequestInit) {
   const res = await fetch(url, init)
   const data = await res.json().catch(() => null)
@@ -104,6 +117,7 @@ export default function AdminPage() {
   const { addToast } = useToast()
   const [role, setRole] = useState<string | null>(null)
   const [isAdmin, setIsAdmin] = useState<boolean | null>(null)
+  const [isSuperAdmin, setIsSuperAdmin] = useState(false)
 
   const [stats, setStats] = useState<Stats | null>(null)
   const [usage, setUsage] = useState<ApiUsage | null>(null)
@@ -114,6 +128,8 @@ export default function AdminPage() {
   const [search, setSearch] = useState("")
   const [endpoints, setEndpoints] = useState<Endpoint[]>([])
   const [showEndpoints, setShowEndpoints] = useState(false)
+  const [auditLogs, setAuditLogs] = useState<AuditEntry[]>([])
+  const [showAudit, setShowAudit] = useState(false)
   const [loading, setLoading] = useState(true)
 
   const loadAccess = async () => {
@@ -122,9 +138,11 @@ export default function AdminPage() {
       const r = me?.user?.role ?? me?.role ?? "user"
       setRole(r)
       setIsAdmin(r === "admin" || r === "superadmin")
+      setIsSuperAdmin(r === "superadmin")
     } catch {
       setRole("user")
       setIsAdmin(false)
+      setIsSuperAdmin(false)
     }
   }
 
@@ -145,6 +163,16 @@ export default function AdminPage() {
       addToast(err instanceof Error ? err.message : "Failed to load admin data", "error")
     } finally {
       setLoading(false)
+    }
+  }
+
+  const loadAudit = async () => {
+    try {
+      const data = await fetchJson("/api/admin/audit-logs?per_page=100")
+      setAuditLogs(data.logs ?? [])
+    } catch (err) {
+      console.error("admin audit error:", err)
+      addToast(err instanceof Error ? err.message : "Failed to load audit log", "error")
     }
   }
 
@@ -185,6 +213,25 @@ export default function AdminPage() {
     } catch (err) {
       console.error("toggle user error:", err)
       addToast(err instanceof Error ? err.message : "Failed to update user", "error")
+    }
+  }
+
+  const changeRole = async (u: AdminUser, target: string) => {
+    if (u.role === target) return
+    try {
+      const data = await fetchJson(`/api/admin/users/${u.id}/role`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ role: target }),
+      })
+      addToast(
+        `${u.email} role → ${data?.role ?? target}`,
+        data?.ok ? "success" : "error",
+      )
+      loadUsers(userPage, search)
+    } catch (err) {
+      console.error("change role error:", err)
+      addToast(err instanceof Error ? err.message : "Failed to update role", "error")
     }
   }
 
@@ -401,7 +448,20 @@ export default function AdminPage() {
                       <Badge variant={u.is_active ? "success" : "error"}>{u.is_active ? "Active" : "Disabled"}</Badge>
                     </td>
                     <td className="py-2.5">
-                      <div className="flex justify-end">
+                      <div className="flex justify-end gap-2">
+                        {isSuperAdmin && (
+                          <select
+                            value={u.role}
+                            onChange={e => changeRole(u, e.target.value)}
+                            className="h-8 rounded-md border bg-transparent px-2 text-xs"
+                            style={{ borderColor: "var(--border-default)", color: "var(--text-primary)" }}
+                            aria-label={`Change role for ${u.email}`}
+                          >
+                            <option value="user">user</option>
+                            <option value="admin">admin</option>
+                            <option value="superadmin">superadmin</option>
+                          </select>
+                        )}
                         <Button variant="ghost" size="sm" onClick={() => toggleUser(u)}>
                           {u.is_active ? "Disable" : "Enable"}
                         </Button>
@@ -530,6 +590,80 @@ export default function AdminPage() {
                         <td className="py-1.5 text-xs" style={{ color: "var(--text-secondary)" }}>{ep.name}</td>
                       </tr>
                     ))}
+                  </tbody>
+                </table>
+              </div>
+            </CardContent>
+          </motion.div>
+        )}
+      </Card>
+
+      {/* Audit log */}
+      <Card>
+        <CardHeader>
+          <button
+            className="flex items-center justify-between w-full text-left"
+            onClick={() => {
+              setShowAudit(v => {
+                if (!v) loadAudit()
+                return !v
+              })
+            }}
+          >
+            <div className="flex items-center gap-2">
+              <ShieldAlert className="h-4 w-4" style={{ color: "var(--accent)" }} />
+              <div>
+                <CardTitle>Audit Log</CardTitle>
+                <CardDescription>{auditLogs.length} recent security events</CardDescription>
+              </div>
+            </div>
+            <ChevronDown className={`h-4 w-4 transition-transform ${showAudit ? "rotate-180" : ""}`} />
+          </button>
+        </CardHeader>
+        {showAudit && (
+          <motion.div
+            initial={{ opacity: 0, height: 0 }}
+            animate={{ opacity: 1, height: "auto" }}
+          >
+            <CardContent>
+              <div className="overflow-x-auto max-h-96 overflow-y-auto">
+                <table className="w-full text-sm">
+                  <thead>
+                    <tr style={{ color: "var(--text-muted)" }}>
+                      <th className="text-left font-medium py-2">Action</th>
+                      <th className="text-left font-medium py-2">User</th>
+                      <th className="text-left font-medium py-2">Resource</th>
+                      <th className="text-left font-medium py-2">IP</th>
+                      <th className="text-left font-medium py-2">When</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {auditLogs.map(entry => (
+                      <tr key={entry.id} style={{ borderTop: "1px solid var(--border-default)" }}>
+                        <td className="py-1.5 font-mono text-xs" style={{ color: "var(--text-primary)" }}>
+                          {entry.action}
+                        </td>
+                        <td className="py-1.5 text-xs" style={{ color: "var(--text-secondary)" }}>
+                          {entry.user_email ?? entry.user_id ?? "system"}
+                        </td>
+                        <td className="py-1.5 text-xs" style={{ color: "var(--text-muted)" }}>
+                          {entry.resource_type ? `${entry.resource_type}:${entry.resource_id ?? ""}` : "—"}
+                        </td>
+                        <td className="py-1.5 font-mono text-xs" style={{ color: "var(--text-muted)" }}>
+                          {entry.ip_address ?? "—"}
+                        </td>
+                        <td className="py-1.5 text-xs" style={{ color: "var(--text-secondary)" }}>
+                          {entry.created_at ? new Date(entry.created_at).toLocaleString() : "—"}
+                        </td>
+                      </tr>
+                    ))}
+                    {auditLogs.length === 0 && (
+                      <tr>
+                        <td colSpan={5} className="py-6 text-center" style={{ color: "var(--text-muted)" }}>
+                          No audit events recorded yet
+                        </td>
+                      </tr>
+                    )}
                   </tbody>
                 </table>
               </div>

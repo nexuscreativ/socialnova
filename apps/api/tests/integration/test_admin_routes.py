@@ -189,3 +189,140 @@ class TestEndpoints:
         paths = {r["path"] for r in data["routes"]}
         assert "/admin/api-usage" in paths
         assert "/admin/api-keys" in paths
+
+
+@pytest.mark.asyncio
+class TestRoleManagement:
+    async def test_promote_user_to_admin(self, client, db_session):
+        super = _mk_user(db_session, role="superadmin")
+        target = _mk_user(db_session, role="user", email=f"promo_{uuid.uuid4().hex[:8]}@example.com")
+        db_session.add(super)
+        db_session.add(target)
+        await db_session.commit()
+        token = create_access_token(super.id, super.role)
+        response = await client.put(
+            f"/admin/users/{target.id}/role",
+            headers={"Authorization": f"Bearer {token}"},
+            json={"role": "admin"},
+        )
+        assert response.status_code == 200
+        assert response.json()["role"] == "admin"
+
+    async def test_admin_cannot_change_roles(self, client, db_session):
+        admin = _mk_user(db_session, role="admin")
+        target = _mk_regular_user(db_session)
+        db_session.add(admin)
+        db_session.add(target)
+        await db_session.commit()
+        token = create_access_token(admin.id, admin.role)
+        response = await client.put(
+            f"/admin/users/{target.id}/role",
+            headers={"Authorization": f"Bearer {token}"},
+            json={"role": "admin"},
+        )
+        assert response.status_code == 403
+
+    async def test_invalid_role_rejected(self, client, db_session):
+        super = _mk_user(db_session, role="superadmin")
+        target = _mk_regular_user(db_session)
+        db_session.add(super)
+        db_session.add(target)
+        await db_session.commit()
+        token = create_access_token(super.id, super.role)
+        response = await client.put(
+            f"/admin/users/{target.id}/role",
+            headers={"Authorization": f"Bearer {token}"},
+            json={"role": "root"},
+        )
+        assert response.status_code == 422
+
+    async def test_cannot_demote_self(self, client, db_session):
+        super = _mk_user(db_session, role="superadmin")
+        db_session.add(super)
+        await db_session.commit()
+        token = create_access_token(super.id, super.role)
+        response = await client.put(
+            f"/admin/users/{super.id}/role",
+            headers={"Authorization": f"Bearer {token}"},
+            json={"role": "user"},
+        )
+        assert response.status_code == 400
+
+    async def test_cannot_demote_last_superadmin(self, client, db_session):
+        super = _mk_user(db_session, role="superadmin")
+        other = _mk_regular_user(db_session)
+        db_session.add(super)
+        db_session.add(other)
+        await db_session.commit()
+        token = create_access_token(super.id, super.role)
+        response = await client.put(
+            f"/admin/users/{super.id}/role",
+            headers={"Authorization": f"Bearer {token}"},
+            json={"role": "admin"},
+        )
+        assert response.status_code == 400
+
+    async def test_can_demote_superadmin_when_another_exists(self, client, db_session):
+        super_a = _mk_user(db_session, role="superadmin", email=f"sa1_{uuid.uuid4().hex[:8]}@example.com")
+        super_b = _mk_user(db_session, role="superadmin", email=f"sa2_{uuid.uuid4().hex[:8]}@example.com")
+        db_session.add(super_a)
+        db_session.add(super_b)
+        await db_session.commit()
+        token = create_access_token(super_a.id, super_a.role)
+        response = await client.put(
+            f"/admin/users/{super_b.id}/role",
+            headers={"Authorization": f"Bearer {token}"},
+            json={"role": "admin"},
+        )
+        assert response.status_code == 200
+        assert response.json()["role"] == "admin"
+
+
+@pytest.mark.asyncio
+class TestAuditLogs:
+    async def test_audit_logs_empty(self, client, db_session):
+        admin = _mk_user(db_session, role="superadmin")
+        db_session.add(admin)
+        await db_session.commit()
+        token = create_access_token(admin.id, admin.role)
+        response = await client.get("/admin/audit-logs", headers={"Authorization": f"Bearer {token}"})
+        assert response.status_code == 200
+        assert response.json()["logs"] == []
+
+    async def test_audit_logs_denied_for_user(self, client, db_session):
+        user = _mk_regular_user(db_session)
+        db_session.add(user)
+        await db_session.commit()
+        token = create_access_token(user.id, user.role)
+        response = await client.get("/admin/audit-logs", headers={"Authorization": f"Bearer {token}"})
+        assert response.status_code == 403
+
+    async def test_audit_logs_with_data(self, client, db_session):
+        from models import AuditLog
+
+        admin = _mk_user(db_session, role="superadmin")
+        actor = _mk_regular_user(db_session)
+        db_session.add(admin)
+        db_session.add(actor)
+        await db_session.flush()
+        db_session.add(
+            AuditLog(
+                id=uuid.uuid4(),
+                user_id=actor.id,
+                action="user.login",
+                resource_type="user",
+                resource_id=str(actor.id),
+                details={"k": "v"},
+                ip_address="127.0.0.1",
+                user_agent="test",
+                created_at=datetime.now(timezone.utc),
+            )
+        )
+        await db_session.commit()
+        token = create_access_token(admin.id, admin.role)
+        response = await client.get("/admin/audit-logs", headers={"Authorization": f"Bearer {token}"})
+        assert response.status_code == 200
+        data = response.json()
+        assert data["total"] == 1
+        assert data["logs"][0]["action"] == "user.login"
+        assert data["logs"][0]["user_email"] == actor.email

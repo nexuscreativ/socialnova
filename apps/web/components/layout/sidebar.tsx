@@ -1,11 +1,33 @@
 "use client"
+import { useEffect, useState } from "react"
 import Link from "next/link"
 import { usePathname } from "next/navigation"
 import { cn } from "@/lib/utils"
-import { navigation, bottomNavigation } from "./sidebar-nav"
+import { navigation, bottomNavigation, type NavItem } from "./sidebar-nav"
 
 export function Sidebar() {
   const pathname = usePathname()
+  const [isAdmin, setIsAdmin] = useState<boolean | null>(null)
+
+  useEffect(() => {
+    let cancelled = false
+    fetch("/api/auth/me")
+      .then(r => (r.ok ? r.json() : Promise.resolve({ user: {} })))
+      .then(me => {
+        if (cancelled) return
+        const role = me?.user?.role ?? me?.role ?? "user"
+        setIsAdmin(role === "admin" || role === "superadmin")
+      })
+      .catch(() => {
+        if (!cancelled) setIsAdmin(false)
+      })
+    return () => {
+      cancelled = true
+    }
+  }, [])
+
+  const visible = (items: NavItem[]) =>
+    items.filter(item => !item.adminOnly || isAdmin === true)
 
   return (
     <aside
@@ -26,7 +48,7 @@ export function Sidebar() {
 
       <nav className="flex-1 px-3 py-2">
         <div className="space-y-1">
-          {navigation.map((item) => {
+          {visible(navigation).map((item) => {
             const isActive = pathname === item.href
             return (
               <Link
@@ -49,7 +71,7 @@ export function Sidebar() {
 
       <div className="border-t p-3" style={{ borderColor: 'var(--border-default)' }}>
         <div className="space-y-1">
-          {bottomNavigation.map((item) => (
+          {visible(bottomNavigation).map((item) => (
             <Link
               key={item.name}
               href={item.href}

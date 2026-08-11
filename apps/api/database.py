@@ -2,6 +2,8 @@
 SocialNova API - Database configuration.
 """
 import os
+import secrets
+
 from sqlalchemy.ext.asyncio import create_async_engine, async_sessionmaker, AsyncSession
 from sqlalchemy.orm import DeclarativeBase
 
@@ -91,6 +93,73 @@ async def init_db():
         await conn.run_sync(Base.metadata.create_all)
     await seed_builtin_agents()
     await seed_site_pages()
+    await ensure_admin_bootstrap()
+
+
+async def ensure_admin_bootstrap(session=None):
+    """Idempotently provision superadmin accounts from settings.
+
+    1. Promotes any existing user whose email is in `ADMIN_EMAILS` to
+       `superadmin` (durable source of truth, re-applied every boot).
+    2. If `ADMIN_EMAIL`/`ADMIN_PASSWORD` are set and no user exists for
+       `ADMIN_EMAIL`, creates a verified superadmin with that password.
+       Existing accounts are never modified by this path.
+
+    If `session` is supplied (tests) it is used directly and committed;
+    otherwise a fresh session is opened via `AsyncSessionLocal`.
+    """
+    from config import settings
+    from models import User
+    from services.auth import hash_password
+    from sqlalchemy import select
+
+    # Sanity: promoting with an empty ADMIN_EMAILS is a no-op.
+    if not settings.ADMIN_EMAILS and not settings.ADMIN_EMAIL:
+        return
+
+    async def _run(session):
+        # 1) Promote listed emails.
+        if settings.ADMIN_EMAILS:
+            rows = (
+                await session.execute(
+                    select(User).where(
+                        User.email.in_([e.lower().strip() for e in settings.ADMIN_EMAILS])
+                    )
+                )
+            ).scalars().all()
+            for u in rows:
+                if u.role != "superadmin":
+                    u.role = "superadmin"
+                    await session.flush()
+
+        # 2) Create the bootstrap admin if it doesn't exist yet.
+        if settings.ADMIN_EMAIL and settings.ADMIN_PASSWORD:
+            target = settings.ADMIN_EMAIL.lower().strip()
+            existing = await session.scalar(select(User).where(User.email == target))
+            if existing is None:
+                session.add(
+                    User(
+                        email=target,
+                        name="Administrator",
+                        password_hash=hash_password(settings.ADMIN_PASSWORD),
+                        is_verified=True,
+                        is_active=True,
+                        role="superadmin",
+                        tier="enterprise",
+                        verification_token=None,
+                        reset_token=None,
+                        reset_token_expires=None,
+                    )
+                )
+                await session.flush()
+
+        await session.commit()
+
+    if session is not None:
+        await _run(session)
+    else:
+        async with AsyncSessionLocal() as session:
+            await _run(session)
 
 
 async def seed_site_pages():

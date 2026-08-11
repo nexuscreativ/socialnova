@@ -11,8 +11,9 @@ from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from database import get_db
-from deps import get_current_user, require_admin
-from models import AgentAction, AgentSession, APIKey, APIRequest, Campaign, Content, User
+from deps import require_admin, require_superadmin
+from models import AgentAction, AgentSession, APIKey, APIRequest, AuditLog, Campaign, Content, User
+from services.audit import log_audit_event
 
 router = APIRouter(prefix="/admin", tags=["Admin"])
 
@@ -20,6 +21,10 @@ router = APIRouter(prefix="/admin", tags=["Admin"])
 class UserStatusUpdate(BaseModel):
     is_active: bool = Field(..., description="Activate or deactivate the user")
     note: Optional[str] = Field(None, max_length=500)
+
+
+class UserRoleUpdate(BaseModel):
+    role: str = Field(..., description="Target role: user, admin, or superadmin")
 
 
 def _user_out(user: User) -> Dict[str, Any]:
@@ -125,6 +130,69 @@ async def admin_update_user_status(
         "user_id": str(target.id),
         "is_active": target.is_active,
         "note": body.note,
+    }
+
+
+# ─── Role management ────────────────────────────────────────────────────────
+
+VALID_ROLES = {"user", "admin", "superadmin"}
+
+
+@router.put("/users/{user_id}/role")
+async def admin_update_user_role(
+    user_id: UUID,
+    body: UserRoleUpdate,
+    user: User = Depends(require_superadmin),
+    db: AsyncSession = Depends(get_db),
+):
+    """Change a user's role (superadmin only)."""
+    role = body.role.strip().lower()
+    if role not in VALID_ROLES:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail=f"Invalid role; must be one of {sorted(VALID_ROLES)}",
+        )
+
+    result = await db.execute(select(User).where(User.id == user_id))
+    target = result.scalar_one_or_none()
+    if not target:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="User not found")
+
+    if target.id == user.id and role != "superadmin":
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="You cannot demote your own account",
+        )
+
+    # Refuse to remove the last superadmin — that would permanently lock the
+    # system out of admin access.
+    if target.role == "superadmin" and role != "superadmin":
+        remaining = await db.scalar(
+            select(func.count()).select_from(User).where(User.role == "superadmin")
+        )
+        if int(remaining or 0) <= 1:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Cannot demote the last superadmin",
+            )
+
+    previous_role = target.role
+    target.role = role
+    await db.commit()
+    await db.refresh(target)
+
+    await log_audit_event(
+        db, action="user.role_changed", user_id=user.id,
+        resource_type="user", resource_id=target.id,
+        details={"previous_role": previous_role, "new_role": role, "target_user_id": str(target.id)},
+    )
+    await db.commit()
+
+    return {
+        "ok": True,
+        "user_id": str(target.id),
+        "previous_role": previous_role,
+        "role": target.role,
     }
 
 
@@ -257,5 +325,66 @@ async def admin_api_keys(
                 "created_at": key.created_at.isoformat() if key.created_at else None,
             }
             for key, email in rows
+        ],
+    }
+
+
+# ─── Audit log ──────────────────────────────────────────────────────────────
+
+@router.get("/audit-logs", response_model=Dict[str, Any])
+async def admin_audit_logs(
+    page: int = Query(default=1, ge=1),
+    per_page: int = Query(default=50, ge=1, le=200),
+    action: Optional[str] = Query(default=None, max_length=100),
+    user: User = Depends(require_admin),
+    db: AsyncSession = Depends(get_db),
+):
+    """Recent security audit trail (admin only)."""
+    filters = []
+    if action:
+        filters.append(AuditLog.action == action)
+
+    total = int(
+        await db.scalar(select(func.count()).select_from(AuditLog).where(*filters)) or 0
+    )
+    rows = (
+        await db.execute(
+            select(AuditLog, User.email)
+            .outerjoin(User, User.id == AuditLog.user_id)
+            .where(*filters)
+            .order_by(AuditLog.created_at.desc())
+            .offset((page - 1) * per_page)
+            .limit(per_page)
+        )
+    ).all()
+
+    actions = (
+        await db.execute(
+            select(AuditLog.action, func.count(AuditLog.id))
+            .group_by(AuditLog.action)
+            .order_by(func.count(AuditLog.id).desc())
+            .limit(50)
+        )
+    ).all()
+
+    return {
+        "total": total,
+        "page": page,
+        "per_page": per_page,
+        "actions": [{"action": a, "count": c} for a, c in actions],
+        "logs": [
+            {
+                "id": str(entry.id),
+                "action": entry.action,
+                "user_id": str(entry.user_id) if entry.user_id else None,
+                "user_email": email,
+                "resource_type": entry.resource_type,
+                "resource_id": entry.resource_id,
+                "details": entry.details,
+                "ip_address": entry.ip_address,
+                "user_agent": entry.user_agent,
+                "created_at": entry.created_at.isoformat() if entry.created_at else None,
+            }
+            for entry, email in rows
         ],
     }
