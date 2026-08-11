@@ -11,13 +11,23 @@ _raw_db_url = os.getenv(
 )
 
 
+_SSLMODE = None
+
+
 def _normalize_db_url(url: str) -> str:
     """Adapt a driver-agnostic DATABASE_URL to asyncpg.
 
-    Fly.io's `postgres attach` sets `postgres://...`, which SQLAlchemy maps to
-    the sync psycopg2 dialect. Rewrite it to `postgresql+asyncpg://` and drop
-    query params asyncpg does not understand (e.g. sslmode).
+    Fly.io's `postgres attach` sets `postgres://...?sslmode=disable`, which
+    SQLAlchemy maps to the sync psycopg2 dialect. Rewrite the scheme to
+    `postgresql+asyncpg://` and translate the libpq sslmode option into an
+    asyncpg-compatible setting:
+
+    * `sslmode=disable` is consumed here and turned into `ssl=False`, so
+      asyncpg skips the TLS handshake against Fly's pg_tls-proxied .flycast
+      route (which otherwise resets the connection).
+    * Any other query params are preserved as-is.
     """
+    global _SSLMODE
     url = url.strip()
     for scheme in ("postgresql+asyncpg://", "postgres://", "postgresql://"):
         if url.startswith(scheme):
@@ -25,17 +35,38 @@ def _normalize_db_url(url: str) -> str:
             break
     else:
         return url
+    query = ""
     if "?" in rest:
-        rest, _ = rest.split("?", 1)
-    return "postgresql+asyncpg://" + rest
+        rest, query = rest.split("?", 1)
+    params = []
+    for part in query.split("&"):
+        if not part:
+            continue
+        if "=" in part:
+            key, value = part.split("=", 1)
+        else:
+            key, value = part, ""
+        if key.lower() == "sslmode":
+            _SSLMODE = value.lower()
+            continue
+        params.append(f"{key}={value}")
+    new_url = "postgresql+asyncpg://" + rest
+    if params:
+        new_url += "?" + "&".join(params)
+    return new_url
 
 
 DATABASE_URL = _normalize_db_url(_raw_db_url)
+
+_connect_args = {}
+if _SSLMODE == "disable":
+    _connect_args["ssl"] = False
 
 engine = create_async_engine(
     DATABASE_URL,
     echo=False,
     future=True,
+    connect_args=_connect_args or None,
 )
 
 AsyncSessionLocal = async_sessionmaker(
