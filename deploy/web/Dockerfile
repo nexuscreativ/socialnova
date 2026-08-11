@@ -27,7 +27,6 @@ WORKDIR /repo
 
 COPY package.json package-lock.json ./
 COPY apps apps
-COPY packages packages
 
 RUN npm ci
 
