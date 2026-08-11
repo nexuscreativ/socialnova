@@ -1,0 +1,142 @@
+@import "tailwindcss";
+
+@custom-variant dark (&:is([data-theme="dark"] *));
+
+@theme {
+  /* Primary - Orange/Amber */
+  --color-primary-50: #FFF7ED;
+  --color-primary-100: #FFEDD5;
+  --color-primary-200: #FED7AA;
+  --color-primary-300: #FDBA74;
+  --color-primary-400: #FB923C;
+  --color-primary-500: #F97316;
+  --color-primary-600: #EA580C;
+  --color-primary-700: #C2410C;
+  --color-primary-800: #9A3412;
+  --color-primary-900: #7C2D12;
+
+  /* Neutral - Warm Gray */
+  --color-neutral-50: #FAFAF9;
+  --color-neutral-100: #F5F5F4;
+  --color-neutral-200: #E7E5E4;
+  --color-neutral-300: #D6D3D1;
+  --color-neutral-400: #A8A29E;
+  --color-neutral-500: #78716C;
+  --color-neutral-600: #57534E;
+  --color-neutral-700: #44403C;
+  --color-neutral-800: #292524;
+  --color-neutral-900: #1C1917;
+  --color-neutral-950: #0C0A09;
+
+  /* Semantic */
+  --color-success: #22C55E;
+  --color-warning: #EAB308;
+  --color-error: #EF4444;
+  --color-info: #3B82F6;
+}
+
+:root {
+  /* Light theme */
+  --bg-primary: var(--color-neutral-50);
+  --bg-secondary: #FFFFFF;
+  --bg-tertiary: var(--color-neutral-100);
+  --text-primary: var(--color-neutral-900);
+  --text-secondary: var(--color-neutral-600);
+  --text-muted: var(--color-neutral-400);
+  --border-default: var(--color-neutral-200);
+  --accent: var(--color-primary-500);
+  --accent-hover: var(--color-primary-600);
+}
+
+[data-theme="dark"] {
+  --bg-primary: var(--color-neutral-950);
+  --bg-secondary: var(--color-neutral-900);
+  --bg-tertiary: var(--color-neutral-800);
+  --text-primary: var(--color-neutral-50);
+  --text-secondary: var(--color-neutral-300);
+  --text-muted: var(--color-neutral-500);
+  --border-default: var(--color-neutral-800);
+  --accent: var(--color-primary-400);
+  --accent-hover: var(--color-primary-300);
+}
+
+* {
+  border-color: var(--border-default);
+}
+
+body {
+  background-color: var(--bg-primary);
+  color: var(--text-primary);
+  font-family: var(--font-inter), system-ui, sans-serif;
+}
+
+h1, h2, h3, h4, h5, h6 {
+  font-family: var(--font-plus-jakarta), system-ui, sans-serif;
+}
+
+/* Custom scrollbar */
+::-webkit-scrollbar {
+  width: 6px;
+}
+::-webkit-scrollbar-track {
+  background: var(--bg-secondary);
+}
+::-webkit-scrollbar-thumb {
+  background: var(--color-neutral-400);
+  border-radius: 3px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: var(--color-neutral-500);
+}
+
+/* -------------------------------------------------------------------------- */
+/*  Hero — Cinematic parallax animations                                      */
+/* -------------------------------------------------------------------------- */
+
+/* Floating particle drift */
+@keyframes particle-drift {
+  0% {
+    transform: translateY(0px) translateX(0px);
+    opacity: 0.15;
+  }
+  50% {
+    opacity: 0.5;
+  }
+  100% {
+    transform: translateY(-30px) translateX(15px);
+    opacity: 0.15;
+  }
+}
+
+/* CTA button glow pulse */
+.sn-cta-glow {
+  position: relative;
+}
+.sn-cta-glow::after {
+  content: "";
+  position: absolute;
+  inset: -2px;
+  border-radius: inherit;
+  z-index: -1;
+  animation: cta-glow 2.5s ease-in-out infinite;
+}
+@keyframes cta-glow {
+  0%, 100% {
+    box-shadow: 0 0 20px color-mix(in srgb, var(--accent) 30%, transparent);
+  }
+  50% {
+    box-shadow:
+      0 0 30px color-mix(in srgb, var(--accent) 45%, transparent),
+      0 0 60px color-mix(in srgb, var(--accent) 20%, transparent);
+  }
+}
+
+/* Reduce motion for accessibility */
+@media (prefers-reduced-motion: reduce) {
+  .sn-particle {
+    animation: none !important;
+  }
+  .sn-cta-glow::after {
+    animation: none !important;
+  }
+}

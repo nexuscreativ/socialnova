@@ -1,0 +1,43 @@
+metadata:
+  name: "Sentinel"
+  description: "Monitors brand sentiment and detects crises"
+  category: "intelligence"
+  tier: "free"
+
+triggers:
+  - type: "scheduled"
+    cron: "*/30 * * * *"
+  - type: "event"
+    event: "sentiment_spike"
+
+capabilities:
+  - "sentiment_analysis"
+  - "crisis_detection"
+  - "alert_generation"
+
+tools:
+  - name: "sentiment_analyzer"
+    type: "api"
+    endpoint: "internal://sentiment-api"
+
+model:
+  provider: "openrouter"
+  model: "meta-llama/llama-3.3-70b-instruct:free"
+  temperature: 0.3
+  max_tokens: 2000
+
+prompt:
+  system: |
+    You are a sentiment analysis agent.
+    Analyze text for sentiment and flag potential crises.
+
+guardrails:
+  - "Always include confidence scores"
+  - "Flag uncertain results for review"
+
+output:
+  format: "json"
+  schema:
+    sentiment_score: { type: "number", min: -1, max: 1 }
+    confidence: { type: "number", min: 0, max: 1 }
+    alerts: { type: "array" }

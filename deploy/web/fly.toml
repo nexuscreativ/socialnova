@@ -1,0 +1,70 @@
+# =============================================================================
+# SocialNova Web - Fly.io configuration
+# =============================================================================
+# Usage:
+#   flyctl launch --copy-config --no-deploy
+#   flyctl secrets set NOVA_API_URL=https://socialnova-api.fly.dev
+#   flyctl scale memory 1024
+#   flyctl deploy
+# =============================================================================
+
+app = "socialnova-web"
+primary_region = "iad"
+
+[build]
+  # Dockerfile lives in deploy/web/, but builds from the repo ROOT so npm
+  # workspaces + the root lockfile resolve.
+  dockerfile = "deploy/web/Dockerfile"
+
+[nixpacks]
+  # ensure we don't accidentally switch to nixpacks
+  enable = false
+
+[env]
+  NODE_ENV = "production"
+  NEXT_TELEMETRY_DISABLED = "1"
+  PORT = "3000"
+  HOSTNAME = "0.0.0.0"
+  # Backend origin used by SSR (fetchPublicPage/fetchNav) and the /api/site/*
+  # proxy routes. Set the value with `flyctl secrets set NOVA_API_URL=...`.
+  NOVA_API_URL = "https://socialnova-api.fly.dev"
+
+[experimental]
+  auto_rollback = true
+
+[checks]
+  [checks.health]
+    port = 3000
+    type = "http"
+    method = "GET"
+    path = "/api/health"
+    interval = "30s"
+    timeout = "5s"
+    grace_period = "30s"
+
+[[services]]
+  http_checks = []
+  internal_port = 3000
+  protocol = "tcp"
+  processes = ["app"]
+
+  [[services.ports]]
+    handlers = ["http"]
+    port = 80
+    force_https = true
+
+  [[services.ports]]
+    handlers = ["tls", "http"]
+    port = 443
+
+  [[services.health_checks]]
+    interval = "30s"
+    timeout = "5s"
+    grace_period = "30s"
+    method = "GET"
+    path = "/api/health"
+    protocol = "http"
+
+  [services.concurrency]
+    hard_limit = 25
+    soft_limit = 20

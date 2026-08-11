@@ -1,0 +1,325 @@
+
+> @socialnova/web@0.1.0 dev
+> next dev --port 3000
+
+   ▲ Next.js 15.5.23
+   - Local:        http://localhost:3000
+   - Network:      http://172.20.10.7:3000
+
+ ✓ Starting...
+ ✓ Ready in 16.4s
+ ○ Compiling / ...
+ ✓ Compiled / in 24.5s (686 modules)
+ GET / 200 in 35642ms
+ ○ Compiling /dashboard ...
+ ✓ Compiled /dashboard in 35s (1476 modules)
+ GET /dashboard 200 in 39928ms
+ GET / 200 in 6687ms
+ GET /dashboard 200 in 687ms
+ GET /dashboard 200 in 706ms
+ GET /dashboard 200 in 937ms
+ ○ Compiling /chat ...
+ ✓ Compiled /chat in 8.9s (1487 modules)
+ GET /chat 200 in 12115ms
+ GET /chat 200 in 897ms
+ GET / 200 in 2880ms
+ ✓ Compiled in 5.1s (666 modules)
+ ✓ Compiled in 2.8s (666 modules)
+ GET / 200 in 2963ms
+ GET / 200 in 783ms
+ ✓ Compiled in 6.2s (666 modules)
+ ✓ Compiled in 2.7s (666 modules)
+ GET / 200 in 2923ms
+ GET / 200 in 1298ms
+ ✓ Compiled in 1413ms (666 modules)
+ ✓ Compiled in 1523ms (666 modules)
+ GET / 200 in 1775ms
+ GET / 200 in 889ms
+ ✓ Compiled in 2.1s (666 modules)
+ ✓ Compiled in 3.3s (666 modules)
+ GET / 200 in 3613ms
+ GET / 200 in 1394ms
+ ✓ Compiled in 3s (666 modules)
+ ✓ Compiled in 5.5s (666 modules)
+ GET / 200 in 5856ms
+ GET / 200 in 11610ms
+ ✓ Compiled in 16.9s (1107 modules)
+ ✓ Compiled in 3.9s (687 modules)
+ GET / 200 in 5038ms
+ GET / 200 in 5203ms
+ ○ Compiling /dashboard ...
+ ✓ Compiled /dashboard in 6s (1534 modules)
+ GET /dashboard 200 in 11700ms
+ GET / 200 in 6952ms
+ GET /dashboard 200 in 3352ms
+ GET /dashboard 200 in 2425ms
+ GET /dashboard 200 in 1411ms
+ GET / 200 in 2102ms
+ ○ Compiling /_not-found ...
+ ✓ Compiled /_not-found in 8.8s (1124 modules)
+ GET /signup 404 in 10286ms
+ GET /signup 404 in 213ms
+ GET /signup 404 in 1476ms
+ GET /signup 404 in 769ms
+ GET / 200 in 2624ms
+ GET /signup 404 in 397ms
+ GET /signup 404 in 2070ms
+ GET / 200 in 5086ms
+ ✓ Compiled in 61s (699 modules)
+ ✓ Compiled in 1001ms (699 modules)
+ ✓ Compiled in 6.2s (699 modules)
+ ✓ Compiled in 728ms (699 modules)
+ ✓ Compiled in 5.1s (699 modules)
+ ✓ Compiled in 741ms (699 modules)
+ ✓ Compiled in 1004ms (699 modules)
+ ✓ Compiled in 2.9s (699 modules)
+ ✓ Compiled in 2.5s (699 modules)
+ ✓ Compiled in 1009ms (699 modules)
+ ✓ Compiled in 4.4s (699 modules)
+ ○ Compiling /dashboard ...
+ GET /dashboard 500 in 67357ms
+ GET / 500 in 187ms
+ ✓ Compiled /_error in 14.6s (1470 modules)
+ ○ Compiling /dashboard ...
+ ✓ Compiled /dashboard in 5.7s (1047 modules)
+ GET /dashboard 200 in 9623ms
+ ○ Compiling /analytics ...
+ ✓ Compiled /analytics in 10.5s (1824 modules)
+ GET /analytics 200 in 16835ms
+ GET / 200 in 4119ms
+ ✓ Compiled in 51.3s (869 modules)
+ ✓ Compiled in 3.5s (869 modules)
+ GET / 200 in 4955ms
+ GET / 200 in 1230ms
+ ✓ Compiled in 1504ms (869 modules)
+ ✓ Compiled in 2.8s (869 modules)
+ GET / 200 in 3023ms
+ GET / 200 in 1658ms
+ ✓ Compiled in 1810ms (869 modules)
+ ✓ Compiled in 2.6s (869 modules)
+ ✓ Compiled in 1163ms (869 modules)
+ GET / 200 in 3955ms
+ ✓ Compiled in 1551ms (869 modules)
+ ✓ Compiled in 4.4s (869 modules)
+ GET / 200 in 6032ms
+ GET / 200 in 2535ms
+ ✓ Compiled in 2.6s (869 modules)
+ GET / 200 in 1574ms
+ GET / 200 in 1426ms
+ ✓ Compiled in 1340ms (869 modules)
+ ✓ Compiled in 1165ms (869 modules)
+ GET / 200 in 4942ms
+ GET / 200 in 984ms
+ GET / 200 in 1163ms
+ ✓ Compiled in 1438ms (869 modules)
+ ✓ Compiled in 893ms (869 modules)
+ GET / 200 in 1528ms
+ GET / 200 in 658ms
+ ✓ Compiled in 1389ms (869 modules)
+ ✓ Compiled in 1147ms (869 modules)
+ GET / 200 in 2303ms
+ ✓ Compiled in 10.3s (1374 modules)
+ ✓ Compiled in 4.3s (1374 modules)
+ ✓ Compiled in 2.5s (1374 modules)
+ ✓ Compiled in 2.9s (1374 modules)
+ ✓ Compiled in 2.2s (1374 modules)
+ ✓ Compiled in 919ms (869 modules)
+ ✓ Compiled in 4.9s (1388 modules)
+ ✓ Compiled in 3.3s (1374 modules)
+ ✓ Compiled in 2.8s (1374 modules)
+ ✓ Compiled in 2.4s (1374 modules)
+ ✓ Compiled in 2.6s (1374 modules)
+ ✓ Compiled in 2.5s (1374 modules)
+ ✓ Compiled in 4.1s (1374 modules)
+ ✓ Compiled in 3.6s (1374 modules)
+ ✓ Compiled in 3.3s (1374 modules)
+ ✓ Compiled in 5.4s (1374 modules)
+ ✓ Compiled in 3.6s (1374 modules)
+ ✓ Compiled in 5.3s (1388 modules)
+ ✓ Compiled in 4.2s (1374 modules)
+ ✓ Compiled in 1591ms (869 modules)
+ ✓ Compiled in 26.6s (1758 modules)
+ ✓ Compiled in 1424ms (874 modules)
+ ✓ Compiled in 1681ms (874 modules)
+ ✓ Compiled in 1426ms (874 modules)
+ ✓ Compiled in 3s (874 modules)
+ GET / 200 in 7370ms
+ GET / 200 in 1379ms
+ GET / 200 in 4033ms
+ GET / 200 in 3163ms
+ ○ Compiling /login ...
+ ✓ Compiled /login in 24.8s (1780 modules)
+ GET /login 200 in 30635ms
+ ✓ Compiled in 6.2s (880 modules)
+ GET /login 200 in 6471ms
+ ○ Compiling /signup ...
+ ✓ Compiled /signup in 12.7s (1789 modules)
+ GET /signup 200 in 21157ms
+ GET /login 200 in 7807ms
+ ○ Compiling /_not-found ...
+ ✓ Compiled /_not-found in 14.2s (1780 modules)
+ GET /terms 404 in 16434ms
+ GET /terms 404 in 3764ms
+ GET /terms 404 in 3699ms
+ GET /login 200 in 4219ms
+ GET / 200 in 2259ms
+ GET /login 200 in 873ms
+ ○ Compiling /dashboard ...
+ ✓ Compiled /dashboard in 21.2s (978 modules)
+ GET /dashboard 200 in 23475ms
+ GET /dashboard 200 in 716ms
+ ○ Compiling /content ...
+ ✓ Compiled /content in 17s (1905 modules)
+ GET /content 200 in 19589ms
+ ✓ Compiled in 3.6s (903 modules)
+ GET /content 200 in 1923ms
+ GET /content 200 in 622ms
+ GET /content 200 in 786ms
+ ○ Compiling /content/new ...
+ ✓ Compiled /content/new in 6.3s (1920 modules)
+ GET /content/new 200 in 7750ms
+ GET /content/new 200 in 391ms
+ ○ Compiling /campaigns ...
+ ✓ Compiled /campaigns in 16s (1900 modules)
+ GET /campaigns 200 in 17950ms
+ GET /campaigns 200 in 364ms
+ GET /campaigns 200 in 332ms
+ ○ Compiling /_not-found ...
+ ✓ Compiled /_not-found in 12.9s (1885 modules)
+ GET /inbox 404 in 14579ms
+ GET /inbox 404 in 2855ms
+ GET /campaigns 200 in 2998ms
+ ○ Compiling /analytics ...
+ ✓ Compiled /analytics in 6.8s (995 modules)
+ GET /analytics 200 in 9005ms
+ GET /analytics 200 in 270ms
+ GET /analytics 200 in 338ms
+ ○ Compiling /agents ...
+ ✓ Compiled /agents in 19.9s (1911 modules)
+ GET /agents 200 in 21611ms
+ GET /agents 200 in 439ms
+ GET /agents 200 in 4132ms
+ ○ Compiling /settings ...
+ ✓ Compiled /settings in 28.9s (1927 modules)
+ GET /settings 200 in 11948ms
+ GET /settings 200 in 35803ms
+ GET /analytics 200 in 23760ms
+ GET /agents 200 in 8468ms
+ GET /settings 200 in 282ms
+ ○ Compiling /settings/profile ...
+ ✓ Compiled /_not-found in 46.8s (1902 modules)
+ GET /help 404 in 37634ms
+ GET /settings/billing 200 in 46176ms
+ GET /settings/profile 200 in 31659ms
+ GET /settings/profile 200 in 54196ms
+ GET /agents 200 in 4974ms
+ ✓ Compiled in 5.6s (934 modules)
+ ○ Compiling /_not-found ...
+ GET /agents 200 in 3520ms
+ ✓ Compiled /settings/billing in 14.5s (1894 modules)
+ GET /help 404 in 15092ms
+ GET /help 404 in 2094ms
+ GET /settings/billing 200 in 17272ms
+ GET /help 404 in 1758ms
+ GET /agents 200 in 3005ms
+ GET /settings/billing 200 in 537ms
+ ✓ Compiled in 3.4s (938 modules)
+ GET /help 404 in 2365ms
+ GET /help 404 in 2059ms
+ GET /settings/billing 200 in 2672ms
+ GET /agents 200 in 2605ms
+ ✓ Compiled in 4.9s (934 modules)
+ ○ Compiling /_not-found ...
+ GET /agents 200 in 1891ms
+ GET /settings/billing 200 in 2794ms
+ ✓ Compiled /_not-found in 22.2s (1897 modules)
+ GET /help 404 in 23705ms
+ GET /help 404 in 3162ms
+ GET /help 404 in 3401ms
+ GET /agents 200 in 3890ms
+ GET /settings/billing 200 in 3963ms
+ ✓ Compiled in 5.6s (934 modules)
+ ○ Compiling /_not-found ...
+ GET /agents 200 in 3252ms
+ GET /settings/billing 200 in 3431ms
+ ✓ Compiled /_not-found in 9.9s (1883 modules)
+ GET /help 404 in 10708ms
+ GET /help 404 in 2278ms
+ GET /help 404 in 3035ms
+ GET /agents 200 in 4319ms
+ ✓ Compiled in 3.9s (938 modules)
+ GET /settings/billing 200 in 5698ms
+ GET /settings/billing 200 in 569ms
+ GET /agents 200 in 607ms
+ ✓ Compiled in 1946ms (938 modules)
+ ✓ Compiled in 8.1s (1883 modules)
+ GET /help 404 in 9130ms
+ GET /agents 200 in 9571ms
+ GET /settings/billing 200 in 9587ms
+ GET /help 404 in 560ms
+ GET /help 404 in 1368ms
+ GET /agents 200 in 1203ms
+ GET /settings/billing 200 in 1224ms
+ ✓ Compiled in 2.1s (938 modules)
+ GET /agents 200 in 2898ms
+ ✓ Compiled in 6.8s (1883 modules)
+ GET /help 404 in 7539ms
+ GET /settings/billing 200 in 7631ms
+ GET /help 404 in 1743ms
+ GET /help 404 in 1700ms
+ GET /agents 200 in 2166ms
+ GET /settings/billing 200 in 2036ms
+ ✓ Compiled in 3.2s (938 modules)
+ GET /agents 200 in 3092ms
+ ✓ Compiled in 9.4s (1883 modules)
+ GET /help 404 in 9078ms
+ GET /settings/billing 200 in 9226ms
+ GET /help 404 in 1636ms
+ GET /help 404 in 1630ms
+ GET /agents 200 in 2108ms
+ GET /settings/billing 200 in 1934ms
+ ✓ Compiled in 1916ms (938 modules)
+ GET /help 404 in 1147ms
+ GET /help 404 in 1122ms
+ GET /agents 200 in 1656ms
+ GET /settings/billing 200 in 1707ms
+ ✓ Compiled in 1909ms (938 modules)
+ GET /settings/billing 200 in 3053ms
+ GET /agents 200 in 2903ms
+ ✓ Compiled in 6.1s (1883 modules)
+ GET /help 404 in 6496ms
+ GET /help 404 in 1147ms
+ GET /help 404 in 1544ms
+ GET /agents 200 in 1882ms
+ GET /settings/billing 200 in 1916ms
+ ✓ Compiled in 2.5s (938 modules)
+ GET /help 404 in 1301ms
+ GET /agents 200 in 2031ms
+ GET /help 404 in 1476ms
+ GET /settings/billing 200 in 2057ms
+ ✓ Compiled in 2.5s (938 modules)
+ GET /help 404 in 1738ms
+ GET /settings/billing 200 in 2069ms
+ GET /help 404 in 1137ms
+ GET /agents 200 in 2058ms
+ ✓ Compiled in 1936ms (938 modules)
+ GET /help 404 in 1432ms
+ GET /help 404 in 1570ms
+ GET /agents 200 in 2020ms
+ GET /settings/billing 200 in 2039ms
+ ✓ Compiled in 2.1s (938 modules)
+ GET /agents 200 in 2619ms
+ GET /settings/billing 200 in 2684ms
+ ✓ Compiled in 5.8s (1883 modules)
+ GET /help 404 in 6532ms
+ GET /agents 200 in 2306ms
+ GET /settings/billing 200 in 1954ms
+ ✓ Compiled in 8.7s (1883 modules)
+ GET /help 404 in 9104ms
+ GET /help 404 in 831ms
+ GET /help 404 in 680ms
+ ✓ Compiled in 6s (934 modules)
+ ○ Compiling / ...
+ ✓ Compiled / in 59s (1957 modules)
+ GET / 200 in 34629ms
+[?25h

@@ -1,0 +1,239 @@
+# =============================================================================
+# SocialNova - Prometheus Alert Rules
+# =============================================================================
+
+groups:
+  # -------------------------------------------------------------------------
+  # Infrastructure Alerts
+  # -------------------------------------------------------------------------
+  - name: infrastructure
+    rules:
+      - alert: ServiceDown
+        expr: up == 0
+        for: 1m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Service {{ $labels.job }} is down"
+          description: "{{ $labels.instance }} has been unreachable for more than 1 minute."
+
+      - alert: HighCPUUsage
+        expr: 100 - (avg by(instance) (rate(node_cpu_seconds_total{mode="idle"}[5m])) * 100) > 80
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "High CPU usage on {{ $labels.instance }}"
+          description: "CPU usage is above 80% for more than 5 minutes. Current: {{ $value }}%"
+
+      - alert: HighMemoryUsage
+        expr: (1 - (node_memory_MemAvailable_bytes / node_memory_MemTotal_bytes)) * 100 > 85
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "High memory usage on {{ $labels.instance }}"
+          description: "Memory usage is above 85% for more than 5 minutes. Current: {{ $value }}%"
+
+      - alert: DiskSpaceLow
+        expr: (node_filesystem_avail_bytes{mountpoint="/"} / node_filesystem_size_bytes{mountpoint="/"}) * 100 < 15
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Low disk space on {{ $labels.instance }}"
+          description: "Disk space is below 15%. Current: {{ $value }}% available"
+
+      - alert: DiskSpaceCritical
+        expr: (node_filesystem_avail_bytes{mountpoint="/"} / node_filesystem_size_bytes{mountpoint="/"}) * 100 < 5
+        for: 2m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Critical disk space on {{ $labels.instance }}"
+          description: "Disk space is below 5%. Current: {{ $value }}% available"
+
+  # -------------------------------------------------------------------------
+  # Application Alerts
+  # -------------------------------------------------------------------------
+  - name: application
+    rules:
+      - alert: APIHighErrorRate
+        expr: |
+          (
+            sum(rate(http_requests_total{status=~"5.."}[5m]))
+            /
+            sum(rate(http_requests_total[5m]))
+          ) * 100 > 5
+        for: 5m
+        labels:
+          severity: critical
+        annotations:
+          summary: "API error rate is high"
+          description: "Error rate is above 5% for more than 5 minutes. Current: {{ $value }}%"
+
+      - alert: APIHighLatency
+        expr: |
+          histogram_quantile(0.95, sum(rate(http_request_duration_seconds_bucket[5m])) by (le)) > 2
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "API latency is high"
+          description: "95th percentile latency is above 2s for more than 5 minutes. Current: {{ $value }}s"
+
+      - alert: APISlowRequests
+        expr: |
+          histogram_quantile(0.99, sum(rate(http_request_duration_seconds_bucket[5m])) by (le)) > 5
+        for: 5m
+        labels:
+          severity: critical
+        annotations:
+          summary: "API has very slow requests"
+          description: "99th percentile latency is above 5s for more than 5 minutes. Current: {{ $value }}s"
+
+      - alert: HighMemoryUsageAPI
+        expr: process_resident_memory_bytes{job="socialnova-api"} > 1e9
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "API process memory is high"
+          description: "API process memory is above 1GB. Current: {{ $value }} bytes"
+
+      - alert: TooManyOpenFiles
+        expr: process_open_fds{job="socialnova-api"} > 1000
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Too many open file descriptors"
+          description: "API has more than 1000 open file descriptors. Current: {{ $value }}"
+
+  # -------------------------------------------------------------------------
+  # Database Alerts
+  # -------------------------------------------------------------------------
+  - name: database
+    rules:
+      - alert: PostgreSQLDown
+        expr: pg_up == 0
+        for: 1m
+        labels:
+          severity: critical
+        annotations:
+          summary: "PostgreSQL is down"
+          description: "PostgreSQL instance has been unreachable for more than 1 minute."
+
+      - alert: PostgreSQLHighConnections
+        expr: pg_stat_activity_count > 100
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "PostgreSQL has high connection count"
+          description: "Connection count is above 100 for more than 5 minutes. Current: {{ $value }}"
+
+      - alert: PostgreSQLSlowQueries
+        expr: pg_stat_activity_max_tx_duration{datname!~"template.*"} > 300
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "PostgreSQL has slow queries"
+          description: "Long-running query detected (>5 min). Duration: {{ $value }}s"
+
+      - alert: PostgreSQLDeadlocks
+        expr: increase(pg_stat_database_deadlocks[5m]) > 0
+        for: 0m
+        labels:
+          severity: warning
+        annotations:
+          summary: "PostgreSQL deadlock detected"
+          description: "{{ $value }} deadlock(s) detected in the last 5 minutes."
+
+      - alert: PostgreSQLDiskUsage
+        expr: (pg_database_size_bytes / 1073741824) > 10
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "PostgreSQL database size is large"
+          description: "Database size is above 10GB. Current: {{ $value }}GB"
+
+  # -------------------------------------------------------------------------
+  # Redis Alerts
+  # -------------------------------------------------------------------------
+  - name: redis
+    rules:
+      - alert: RedisDown
+        expr: redis_up == 0
+        for: 1m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Redis is down"
+          description: "Redis instance has been unreachable for more than 1 minute."
+
+      - alert: RedisHighMemoryUsage
+        expr: (redis_memory_used_bytes / redis_memory_max_bytes) * 100 > 80
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Redis memory usage is high"
+          description: "Redis memory usage is above 80%. Current: {{ $value }}%"
+
+      - alert: RedisHighEvictionRate
+        expr: rate(redis_evicted_keys_total[5m]) > 100
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Redis eviction rate is high"
+          description: "Redis is evicting more than 100 keys/second."
+
+      - alert: RedisSlowCommands
+        expr: rate(redis_slowlog_length[5m]) > 10
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Redis has slow commands"
+          description: "Redis is processing more than 10 slow commands per second."
+
+  # -------------------------------------------------------------------------
+  # Business Metrics Alerts
+  # -------------------------------------------------------------------------
+  - name: business
+    rules:
+      - alert: LowActiveUsers
+        expr: socialnova_active_users < 10
+        for: 15m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Low active user count"
+          description: "Active users dropped below 10 for more than 15 minutes."
+
+      - alert: HighAPIKeyUsage
+        expr: socialnova_api_key_usage_total > 10000
+        for: 1h
+        labels:
+          severity: info
+        annotations:
+          summary: "High API key usage"
+          description: "API key has been used more than 10,000 times in the last hour."
+
+      - alert: AgentFailureRate
+        expr: |
+          (
+            sum(rate(socialnova_agent_requests_total{status="error"}[5m]))
+            /
+            sum(rate(socialnova_agent_requests_total[5m]))
+          ) * 100 > 10
+        for: 5m
+        labels:
+          severity: critical
+        annotations:
+          summary: "AI agent failure rate is high"
+          description: "Agent error rate is above 10%. Current: {{ $value }}%"

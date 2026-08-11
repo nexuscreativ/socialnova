@@ -1,0 +1,88 @@
+# =============================================================================
+# SocialNova - Alertmanager Configuration
+# =============================================================================
+
+global:
+  resolve_timeout: 5m
+  smtp_from: 'alerts@socialnova.com'
+  smtp_smarthost: 'smtp.gmail.com:587'
+  smtp_auth_username: '{{ .Env.SMTP_USER }}'
+  smtp_auth_password: '{{ .Env.SMTP_PASSWORD }}'
+  smtp_require_tls: true
+
+# Notification templates
+templates:
+  - '/etc/alertmanager/templates/*.tmpl'
+
+# Routing rules
+route:
+  group_by: ['alertname', 'cluster', 'service']
+  group_wait: 10s
+  group_interval: 10s
+  repeat_interval: 12h
+  receiver: 'default'
+  routes:
+    # Critical alerts -> immediate notification
+    - match:
+        severity: critical
+      receiver: 'critical'
+      group_wait: 5s
+      group_interval: 5s
+      repeat_interval: 1h
+
+    # Warning alerts -> standard notification
+    - match:
+        severity: warning
+      receiver: 'warning'
+      repeat_interval: 4h
+
+    # Info alerts -> daily digest
+    - match:
+        severity: info
+      receiver: 'info'
+      repeat_interval: 24h
+
+# Inhibition rules
+inhibit_rules:
+  - source_match:
+      severity: 'critical'
+    target_match:
+      severity: 'warning'
+    equal: ['alertname', 'instance']
+
+# Receivers
+receivers:
+  - name: 'default'
+    email_configs:
+      - to: 'ops@socialnova.com'
+        send_resolved: true
+
+  - name: 'critical'
+    email_configs:
+      - to: 'ops@socialnova.com,cto@socialnova.com'
+        send_resolved: true
+    slack_configs:
+      - api_url: '{{ .Env.SLACK_WEBHOOK_URL }}'
+        channel: '#alerts-critical'
+        title: '{{ .GroupLabels.alertname }}'
+        text: '{{ range .Alerts }}{{ .Annotations.description }}\n{{ end }}'
+        send_resolved: true
+    pagerduty_configs:
+      - service_key: '{{ .Env.PAGERDUTY_KEY }}'
+        severity: '{{ if eq .GroupLabels.severity "critical" }}critical{{ else }}warning{{ end }}'
+
+  - name: 'warning'
+    email_configs:
+      - to: 'ops@socialnova.com'
+        send_resolved: true
+    slack_configs:
+      - api_url: '{{ .Env.SLACK_WEBHOOK_URL }}'
+        channel: '#alerts-warning'
+        title: '{{ .GroupLabels.alertname }}'
+        text: '{{ range .Alerts }}{{ .Annotations.description }}\n{{ end }}'
+        send_resolved: true
+
+  - name: 'info'
+    email_configs:
+      - to: 'ops@socialnova.com'
+        send_resolved: false

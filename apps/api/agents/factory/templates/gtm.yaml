@@ -1,0 +1,199 @@
+# GTM Agent Template
+# Creates go-to-market strategy agents for product launches
+
+name: GTM Custom
+description: "Custom go-to-market agent for specific product launches"
+version: "1.0.0"
+tier: premium
+category: gtm
+
+# Agent configuration
+config:
+  # Launch settings
+  launch_phases:
+    pre_launch:
+      duration_days: 14
+      focus: "Teaser content, audience building, influencer outreach"
+    launch_day:
+      duration_days: 1
+      focus: "Coordinated announcements, PR push, live events"
+    post_launch:
+      duration_days: 30
+      focus: "Engagement, feedback collection, optimization"
+  
+  # Platform defaults
+  default_platforms:
+    - linkedin
+    - twitter
+    - instagram
+    - tiktok
+  
+  # Content types
+  content_types:
+    - teaser_video
+    - announcement_post
+    - infographic
+    - user_generated_content
+    - influencer_collab
+    - live_stream
+    - email_drip
+  
+  # KPI targets
+  default_kpis:
+    - impressions
+    - engagement_rate
+    - click_through_rate
+    - conversions
+    - sentiment_score
+
+# Customization options
+customizable_fields:
+  - name: product_name
+    type: string
+    required: true
+    description: "Name of the product/feature being launched"
+  
+  - name: target_audience
+    type: string
+    required: true
+    description: "Primary target audience segment"
+  
+  - name: budget
+    type: number
+    required: false
+    default: 5000
+    description: "Total budget for the launch campaign"
+  
+  - name: launch_date
+    type: date
+    required: true
+    description: "Target launch date"
+  
+  - name: unique_selling_points
+    type: array
+    required: true
+    description: "Key differentiators and value propositions"
+  
+  - name: competitor_products
+    type: array
+    required: false
+    description: "List of competing products to analyze"
+
+# System prompt template
+system_prompt: |
+  You are a go-to-market strategist specializing in {{product_name}}.
+  
+  Target Audience: {{target_audience}}
+  Budget: ${{budget}}
+  Launch Date: {{launch_date}}
+  
+  Your task is to create a comprehensive GTM strategy that includes:
+  1. Market analysis and positioning
+  2. Messaging framework
+  3. Platform-specific tactics
+  4. Content calendar
+  5. Paid media strategy
+  6. Influencer partnerships
+  7. Success metrics
+  
+  Unique Selling Points:
+  {% for usp in unique_selling_points %}
+  - {{usp}}
+  {% endfor %}
+  
+  {% if competitor_products %}
+  Competitor Analysis:
+  {% for competitor in competitor_products %}
+  - {{competitor}}
+  {% endfor %}
+  {% endif %}
+
+# Output schema
+output_schema:
+  type: object
+  properties:
+    strategy:
+      type: object
+      properties:
+        positioning:
+          type: string
+          description: "Market positioning statement"
+        messaging:
+          type: object
+          properties:
+            headline:
+              type: string
+            subheadline:
+              type: string
+            key_messages:
+              type: array
+              items:
+                type: string
+        channels:
+          type: object
+          description: "Platform-specific tactics"
+    timeline:
+      type: array
+      items:
+        type: object
+        properties:
+          phase:
+            type: string
+          start_date:
+            type: string
+          end_date:
+            type: string
+          activities:
+            type: array
+            items:
+              type: string
+    budget_allocation:
+      type: object
+      properties:
+        paid_media:
+          type: number
+        influencer:
+          type: number
+        content_creation:
+          type: number
+        pr:
+          type: number
+    kpi_targets:
+      type: object
+      properties:
+        impressions:
+          type: number
+        engagement_rate:
+          type: number
+        conversions:
+          type: number
+
+# Usage examples
+examples:
+  - name: SaaS Product Launch
+    input:
+      product_name: "New Analytics Dashboard"
+      target_audience: "Marketing managers at SMBs"
+      budget: 10000
+      launch_date: "2026-09-01"
+      unique_selling_points:
+        - "Real-time data visualization"
+        - "AI-powered insights"
+        - "One-click reporting"
+      competitor_products:
+        - "Google Analytics"
+        - "Mixpanel"
+        - "Amplitude"
+    output_preview: "Full GTM strategy with 30-day content calendar..."
+  
+  - name: Mobile App Launch
+    input:
+      product_name: "SocialNova Mobile App"
+      target_audience: "Social media managers on-the-go"
+      budget: 15000
+      launch_date: "2026-10-15"
+      unique_selling_points:
+        - "Manage all platforms from one app"
+        - "AI content suggestions on mobile"
+        - "Offline scheduling capability"
+    output_preview: "Mobile-first GTM strategy with app store optimization..."
