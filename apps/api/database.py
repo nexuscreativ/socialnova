@@ -5,10 +5,32 @@ import os
 from sqlalchemy.ext.asyncio import create_async_engine, async_sessionmaker, AsyncSession
 from sqlalchemy.orm import DeclarativeBase
 
-DATABASE_URL = os.getenv(
+_raw_db_url = os.getenv(
     "DATABASE_URL",
     "postgresql+asyncpg://postgres:postgres@localhost:5432/socialnova"
 )
+
+
+def _normalize_db_url(url: str) -> str:
+    """Adapt a driver-agnostic DATABASE_URL to asyncpg.
+
+    Fly.io's `postgres attach` sets `postgres://...`, which SQLAlchemy maps to
+    the sync psycopg2 dialect. Rewrite it to `postgresql+asyncpg://` and drop
+    query params asyncpg does not understand (e.g. sslmode).
+    """
+    url = url.strip()
+    for scheme in ("postgresql+asyncpg://", "postgres://", "postgresql://"):
+        if url.startswith(scheme):
+            rest = url[len(scheme):]
+            break
+    else:
+        return url
+    if "?" in rest:
+        rest, _ = rest.split("?", 1)
+    return "postgresql+asyncpg://" + rest
+
+
+DATABASE_URL = _normalize_db_url(_raw_db_url)
 
 engine = create_async_engine(
     DATABASE_URL,
