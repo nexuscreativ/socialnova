@@ -11,6 +11,7 @@ monotonic timestamps to build a sliding-window counter per identity. Provides:
 """
 import asyncio
 import logging
+import os
 import time
 from collections import OrderedDict, deque
 from typing import Callable, Dict, Optional
@@ -106,10 +107,18 @@ def _client_ip(request) -> str:
     """Resolve the client IP for rate-limit identity.
 
     `X-Forwarded-For` is attacker-controlled unless the immediate peer is the
-    configured trusted proxy, so it is only consulted in that case.
+    configured trusted proxy, so it is only consulted in that case. On Fly.io
+    every request reaches the app through the edge proxy (never a direct
+    client), so the peer is always trusted and XFF is the real client IP.
     """
     peer = request.client.host if request.client else None
     trusted = settings.TRUSTED_PROXY
+    on_fly = bool(os.getenv("FLY_APP_NAME"))
+    if on_fly:
+        forwarded = request.headers.get("X-Forwarded-For")
+        if forwarded:
+            return forwarded.split(",")[0].strip()
+        return peer or "unknown"
     if peer and trusted:
         if isinstance(trusted, str):
             is_trusted = peer == trusted

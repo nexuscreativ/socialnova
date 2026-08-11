@@ -1,7 +1,7 @@
 import logging
 from contextlib import asynccontextmanager
 
-from fastapi import FastAPI, Request
+from fastapi import FastAPI, Request, Depends
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.middleware.gzip import GZipMiddleware
 from fastapi.responses import PlainTextResponse, Response
@@ -31,6 +31,7 @@ from middleware.request_context import (
     RequestLogMiddleware,
     VersioningMiddleware,
 )
+from deps import require_admin
 
 from services import background, metrics as metrics_service
 
@@ -215,8 +216,10 @@ async def health_live():
 # ─── Prometheus metrics ─────────────────────────────────────────────────────
 
 @app.get("/metrics", include_in_schema=False)
-async def metrics_endpoint():
-    """Prometheus exposition endpoint (plaintext)."""
+async def metrics_endpoint(
+    _: None = Depends(require_admin),
+):
+    """Prometheus exposition endpoint (plaintext, admin-only)."""
     payload = metrics_service.generate_metrics_output()
     if payload is None:
         return PlainTextResponse(
