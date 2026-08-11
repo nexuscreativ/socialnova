@@ -98,10 +98,20 @@ async def chat_completions(
     if client is None:
         raise HTTPException(status_code=503, detail="AI provider not configured")
 
+    # Never trust client-supplied tier/model for billing: enforce an allowlist
+    # so an authenticated user cannot burn the shared OpenRouter key on
+    # arbitrary (potentially expensive) frontier models.
+    tier = request.tier if request.tier in client.TIER_MODELS else "free"
+    known_models = {m for models in client.TIER_MODELS.values() for m in models.values()}
+    known_models.update(client.FALLBACK_CHAIN)
+    model = request.model
+    if model is not None and model not in known_models:
+        raise HTTPException(status_code=400, detail=f"Unknown model: {model}")
+
     response = await client.chat_completion(
         messages=request.messages,
-        model=request.model,
-        tier=request.tier,
+        model=model,
+        tier=tier,
     )
 
     return response

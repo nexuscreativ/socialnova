@@ -14,8 +14,18 @@ if config.config_file_name is not None:
     fileConfig(config.config_file_name)
 
 # add your model's MetaData object here
-from database import Base
+from database import Base, _normalize_db_url
+import models  # noqa: F401  (registers tables on Base.metadata)
+import os
+
 target_metadata = Base.metadata
+
+# Honour DATABASE_URL (applied through the same normalization the app uses,
+# including the sslmode=disable -> ssl=False translation for Fly's .flycast
+# route). Falls back to alembic.ini's sqlalchemy.url when unset.
+_env_db_url = os.getenv("DATABASE_URL")
+if _env_db_url:
+    config.set_main_option("sqlalchemy.url", _normalize_db_url(_env_db_url))
 
 def run_migrations_offline() -> None:
     """Run migrations in 'offline' mode."""

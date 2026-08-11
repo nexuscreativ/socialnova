@@ -135,6 +135,9 @@ def save_upload(
 
 def save_base64(data_b64: str, original_name: Optional[str] = None, content_type: Optional[str] = None) -> dict:
     """Accept a base64 string (with or without data: URI prefix)."""
+    # Reject oversized payloads *before* decoding to bound memory use.
+    if len(data_b64) > (settings.MAX_UPLOAD_SIZE * 4) // 3 + 1024:
+        raise ValueError(f"File exceeds {settings.MAX_UPLOAD_SIZE} bytes limit")
     try:
         if data_b64.startswith("data:"):
             header, _, b64 = data_b64.partition(",")

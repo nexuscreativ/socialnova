@@ -16,7 +16,7 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from database import get_db
-from deps import get_client_ip, get_user_agent, require_admin
+from deps import get_client_ip, get_current_user_optional, get_user_agent, require_admin
 from models import ContentRevision, SitePage, SiteSection, User
 from services.audit import log_audit_event
 
@@ -171,13 +171,19 @@ async def list_pages(
 async def get_page_public(
     slug: str,
     view: str = Query(default="published", pattern="^(published|draft)$"),
+    user: Optional[User] = Depends(get_current_user_optional),
     db: AsyncSession = Depends(get_db),
 ):
-    """Public read: page + enabled sections. Supports `view=draft` for admins."""
+    """Public read: page + enabled sections. `view=draft` requires admin."""
     page = await _get_page(db, slug)
     sections = await _get_sections(db, page.id)
 
     if view == "draft":
+        if user is None or user.role not in ("admin", "superadmin"):
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="Admin access required",
+            )
         return _page_out(page, sections)
 
     if page.status != "published":

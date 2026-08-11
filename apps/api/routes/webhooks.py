@@ -3,6 +3,7 @@ Webhook routes: Stripe payment and social media platform webhooks.
 """
 from typing import Any
 from uuid import UUID as UU
+import hmac
 
 from fastapi import APIRouter, Depends, HTTPException, Request, status
 from sqlalchemy import select
@@ -240,10 +241,25 @@ async def social_webhook(
     """
     Handle social media platform webhooks (callbacks from publishing APIs).
     Supports Instagram, Twitter, LinkedIn, etc.
+
+    Authenticated with `X-Webhook-Secret` (compare_digest) and fail-closed:
+    when SOCIAL_WEBHOOK_SECRET is unset the endpoint refuses all requests.
     """
     payload = await request.json()
     platform = payload.get("platform", "unknown")
     event_type = payload.get("event_type", "unknown")
+
+    provided = request.headers.get("X-Webhook-Secret", "")
+    if not settings.SOCIAL_WEBHOOK_SECRET:
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="Webhook signature verification is not configured",
+        )
+    if not provided or not hmac.compare_digest(provided, settings.SOCIAL_WEBHOOK_SECRET):
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid webhook secret",
+        )
 
     # Validate platform
     supported_platforms = {"instagram", "twitter", "linkedin", "facebook", "tiktok", "youtube"}

@@ -86,6 +86,29 @@ async def require_admin(
     return user
 
 
+async def get_current_user_optional(
+    credentials: Optional[HTTPAuthorizationCredentials] = Depends(bearer_scheme),
+    db: AsyncSession = Depends(get_db),
+) -> Optional[User]:
+    """Return the current user, or None when no valid token is supplied.
+
+    Never raises for missing/invalid credentials; used to make a public
+    endpoint conditionally require admin (e.g. `view=draft`).
+    """
+    if credentials is None:
+        return None
+    payload = decode_access_token(credentials.credentials)
+    if not payload or not payload.get("sub"):
+        return None
+    try:
+        user = await get_user_by_id(db, UUID(payload["sub"]))
+    except (ValueError, TypeError):
+        return None
+    if not user or not user.is_active:
+        return None
+    return user
+
+
 async def require_superadmin(
     user: User = Depends(get_current_user),
 ) -> User:

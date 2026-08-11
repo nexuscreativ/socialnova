@@ -10,6 +10,7 @@ from fastapi.responses import FileResponse, JSONResponse
 
 from deps import get_current_user
 from models import User
+from config import settings
 from services.storage import (
     build_public_url,
     file_exists,
@@ -21,6 +22,17 @@ from services.storage import (
 router = APIRouter(prefix="/uploads", tags=["Uploads"])
 
 logger = logging.getLogger("socialnova.uploads")
+
+
+async def _read_capped(file: UploadFile) -> bytes:
+    """Read the body up to MAX_UPLOAD_SIZE+1 to bound memory usage."""
+    data = await file.read(settings.MAX_UPLOAD_SIZE + 1)
+    if len(data) > settings.MAX_UPLOAD_SIZE:
+        raise HTTPException(
+            status_code=status.HTTP_413_REQUEST_ENTITY_TOO_LARGE,
+            detail=f"File exceeds {settings.MAX_UPLOAD_SIZE} bytes limit",
+        )
+    return data
 
 
 async def _persist(data: bytes, original_name: str, content_type: Optional[str], request: Request) -> dict:
@@ -45,7 +57,7 @@ async def upload_file(
     user: User = Depends(get_current_user),
 ):
     """Upload a single file (multipart/form-data, field name `file`)."""
-    data = await file.read()
+    data = await _read_capped(file)
     return await _persist(data, file.filename or "upload.bin", file.content_type, request)
 
 
@@ -60,7 +72,7 @@ async def upload_media(
     JSON body shape: {"data": "<base64>", "filename": "...", "content_type": ""}
     """
     if file is not None:
-        data = await file.read()
+        data = await _read_capped(file)
         return await _persist(data, file.filename or "upload.bin", file.content_type, request)
 
     try:

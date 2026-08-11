@@ -61,6 +61,7 @@ class Settings(BaseSettings):
     # -------------------------------------------------------------------------
     STRIPE_SECRET_KEY: str = ""
     STRIPE_WEBHOOK_SECRET: str = ""
+    SOCIAL_WEBHOOK_SECRET: str = ""
 
     # -------------------------------------------------------------------------
     # Email

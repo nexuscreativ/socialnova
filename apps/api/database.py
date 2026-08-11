@@ -66,7 +66,7 @@ engine = create_async_engine(
     DATABASE_URL,
     echo=False,
     future=True,
-    connect_args=_connect_args or None,
+    connect_args=_connect_args,
 )
 
 AsyncSessionLocal = async_sessionmaker(
