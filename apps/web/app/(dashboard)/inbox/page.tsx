@@ -6,7 +6,7 @@ import { Input } from "@/components/ui/input"
 import { Card, CardContent } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Avatar } from "@/components/ui/avatar"
-import { Tabs } from "@/components/ui/tabs"
+import { Tabs, TabPanel } from "@/components/ui/tabs"
 import { DropdownMenu } from "@/components/ui/dropdown-menu"
 import { motion } from "framer-motion"
 
@@ -87,52 +87,54 @@ export default function InboxPage() {
             ]}
             className="px-6 pt-2"
           >
-            <div className="divide-y" style={{ borderColor: "var(--border-default)" }}>
-              {filtered.map((m, i) => {
-                const badge = typeBadge[m.type]
-                return (
-                  <motion.div
-                    key={m.id}
-                    initial={{ opacity: 0, y: 8 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: i * 0.04 }}
-                    className="flex items-start gap-3 px-6 py-4 hover:bg-[var(--bg-tertiary)]/50 transition-colors cursor-pointer"
-                    onClick={() => markRead(m.id)}
-                  >
-                    <Avatar fallback={(m.name ?? m.handle).charAt(1)?.toUpperCase() || "U"} alt={m.name ?? m.handle} />
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-2">
-                        <span className="text-sm font-semibold truncate" style={{ color: "var(--text-primary)" }}>
-                          {m.name ?? m.handle}
-                        </span>
-                        {m.name && <span className="text-xs shrink-0" style={{ color: "var(--text-muted)" }}>{m.handle}</span>}
-                        <Badge variant={badge.variant}>{badge.label}</Badge>
+            <TabPanel value="all" activeTab={tab} className="mt-0">
+              <div className="divide-y" style={{ borderColor: "var(--border-default)" }}>
+                {filtered.map((m, i) => {
+                  const badge = typeBadge[m.type]
+                  return (
+                    <motion.div
+                      key={m.id}
+                      initial={{ opacity: 0, y: 8 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ delay: i * 0.04 }}
+                      className="flex items-start gap-3 px-6 py-4 hover:bg-[var(--bg-tertiary)]/50 transition-colors cursor-pointer"
+                      onClick={() => markRead(m.id)}
+                    >
+                      <Avatar fallback={(m.name ?? m.handle).charAt(1)?.toUpperCase() || "U"} alt={m.name ?? m.handle} />
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2">
+                          <span className="text-sm font-semibold truncate" style={{ color: "var(--text-primary)" }}>
+                            {m.name ?? m.handle}
+                          </span>
+                          {m.name && <span className="text-xs shrink-0" style={{ color: "var(--text-muted)" }}>{m.handle}</span>}
+                          <Badge variant={badge.variant}>{badge.label}</Badge>
+                        </div>
+                        <p className="text-sm mt-0.5 truncate" style={{ color: m.unread ? "var(--text-primary)" : "var(--text-secondary)" }}>
+                          {m.preview}
+                        </p>
                       </div>
-                      <p className="text-sm mt-0.5 truncate" style={{ color: m.unread ? "var(--text-primary)" : "var(--text-secondary)" }}>
-                        {m.preview}
-                      </p>
-                    </div>
-                    <div className="flex items-center gap-3 shrink-0">
-                      <span className="text-xs" style={{ color: "var(--text-muted)" }}>{m.time}</span>
-                      {m.unread && <span className="h-2 w-2 rounded-full" style={{ backgroundColor: "var(--accent)" }} />}
-                      <DropdownMenu
-                        items={[
-                          { label: m.unread ? "Mark as read" : "Mark as unread", icon: <Check className="h-3.5 w-3.5" />, onClick: () => markRead(m.id) },
-                          { label: "Reply", icon: <Send className="h-3.5 w-3.5" /> },
-                          { label: "Archive", icon: <MoreVertical className="h-3.5 w-3.5" /> },
-                        ]}
-                      />
-                    </div>
-                  </motion.div>
-                )
-              })}
-              {filtered.length === 0 && (
-                <div className="py-16 text-center">
-                  <Inbox className="h-10 w-10 mx-auto mb-3" style={{ color: "var(--text-muted)" }} />
-                  <p className="text-sm" style={{ color: "var(--text-muted)" }}>No messages found.</p>
-                </div>
-              )}
-            </div>
+                      <div className="flex items-center gap-3 shrink-0">
+                        <span className="text-xs" style={{ color: "var(--text-muted)" }}>{m.time}</span>
+                        {m.unread && <span className="h-2 w-2 rounded-full" style={{ backgroundColor: "var(--accent)" }} />}
+                        <DropdownMenu
+                          items={[
+                            { label: m.unread ? "Mark as read" : "Mark as unread", icon: <Check className="h-3.5 w-3.5" />, onClick: () => markRead(m.id) },
+                            { label: "Reply", icon: <Send className="h-3.5 w-3.5" /> },
+                            { label: "Archive", icon: <MoreVertical className="h-3.5 w-3.5" /> },
+                          ]}
+                        />
+                      </div>
+                    </motion.div>
+                  )
+                })}
+                {filtered.length === 0 && (
+                  <div className="py-16 text-center">
+                    <Inbox className="h-10 w-10 mx-auto mb-3" style={{ color: "var(--text-muted)" }} />
+                    <p className="text-sm" style={{ color: "var(--text-muted)" }}>No messages found.</p>
+                  </div>
+                )}
+              </div>
+            </TabPanel>
           </Tabs>
         </CardContent>
       </Card>
