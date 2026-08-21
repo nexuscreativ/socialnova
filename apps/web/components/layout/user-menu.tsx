@@ -102,7 +102,7 @@ export function UserMenu() {
     { label: "Billing", href: "/settings/billing", icon: CreditCard },
     { label: "API Keys", href: "/settings/api-keys", icon: KeyRound },
     ...(isAdmin
-      ? [{ label: "Site Content", href: "/settings/content", icon: LayoutList, separator: true }]
+      ? [{ label: "Admin", href: "/admin", icon: LayoutList, separator: true }]
       : []),
     { label: "Log out", href: null, icon: LogOut, separator: isAdmin, danger: true },
   ]
