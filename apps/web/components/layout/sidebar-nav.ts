@@ -29,15 +29,14 @@ export const navigation: NavItem[] = [
   { name: "Agents", href: "/agents", icon: Bot },
 ]
 
-// Admin section navigation — shown when user has admin role.
-// Items with existing editors under /settings point there; the rest are
-// admin-only sections (Users/Brand/Integrations/Audit) still on the /admin area.
+// Admin section navigation — platform-wide views live under /admin; user-scoped
+// editors that already exist under /settings stay there.
 export const adminNav: NavItem[] = [
   { name: "Overview", href: "/admin", icon: LayoutDashboard },
   { name: "Users", href: "/admin/users", icon: Users },
   { name: "Content", href: "/settings/content", icon: Calendar },
   { name: "Brand", href: "/admin/brand", icon: Bot },
-  { name: "API", href: "/settings/api-keys", icon: ShieldCheck },
+  { name: "API", href: "/admin/api", icon: ShieldCheck },
   { name: "Integrations", href: "/admin/integrations", icon: Settings },
   { name: "Billing", href: "/settings/billing", icon: CreditCard },
   { name: "Audit", href: "/admin/audit", icon: HelpCircle },
