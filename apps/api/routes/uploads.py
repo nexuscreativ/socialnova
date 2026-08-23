@@ -13,7 +13,9 @@ from models import User
 from config import settings
 from services.storage import (
     build_public_url,
+    delete_upload,
     file_exists,
+    list_uploads_meta,
     resolve_path,
     save_base64,
     save_upload,
@@ -48,6 +50,45 @@ async def _persist(data: bytes, original_name: str, content_type: Optional[str],
         extra={"extra_data": {"filename": meta["filename"], "size": meta["size"]}},
     )
     return meta
+
+
+@router.get("")
+@router.get("/")
+async def list_uploads(
+    request: Request,
+    user: User = Depends(get_current_user),
+):
+    """List all uploaded media so editors can reuse assets (media library)."""
+    items = []
+    for m in list_uploads_meta():
+        fn = m.get("filename")
+        if not fn:
+            continue
+        items.append(
+            {
+                "filename": fn,
+                "url": build_public_url(fn, request=request),
+                "original_name": m.get("original_name", fn),
+                "size": m.get("size", 0),
+                "content_type": m.get("content_type", ""),
+                "created_at": m.get("created_at"),
+            }
+        )
+    return {"items": items}
+
+
+@router.delete("/{filename}")
+async def delete_upload_route(
+    filename: str,
+    user: User = Depends(get_current_user),
+):
+    """Delete an uploaded file from the media library."""
+    if not filename or "/" in filename or chr(92) in filename:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid filename")
+    removed = delete_upload(filename)
+    if not removed:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="File not found")
+    return {"ok": True, "filename": filename}
 
 
 @router.post("", status_code=status.HTTP_201_CREATED)

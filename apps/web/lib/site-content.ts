@@ -193,3 +193,26 @@ export async function uploadImage(file: File): Promise<string> {
   }
   return data?.url ?? ""
 }
+
+export interface MediaItem {
+  filename: string
+  url: string
+  original_name: string
+  size: number
+  content_type: string
+  created_at: number | null
+}
+
+/** List all uploaded media for the media library. */
+export async function fetchMediaLibrary(): Promise<MediaItem[]> {
+  const data = await request<{ items: MediaItem[] }>("/api/uploads")
+  return data.items ?? []
+}
+
+/** Delete an uploaded media asset by filename. */
+export async function deleteMedia(filename: string): Promise<void> {
+  await request<{ ok: boolean }>(
+    `/api/uploads/${encodeURIComponent(filename)}`,
+    { method: "DELETE" },
+  )
+}

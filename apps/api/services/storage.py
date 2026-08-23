@@ -202,6 +202,43 @@ def build_public_url(filename: str, request=None) -> str:
     return f"/uploads/{filename}"
 
 
+def list_uploads_meta() -> list:
+    """Return metadata for every stored upload (deduped by filename).
+
+    Re-scans the directory on each call so files uploaded in other processes
+    or after a restart are reflected. Sorted newest-first by creation time.
+    """
+    rebuild_upload_registry()
+    seen: Dict[str, dict] = {}
+    with _metadata_lock:
+        for m in _UPLOAD_META.values():
+            fn = m.get("filename")
+            if fn and fn not in seen:
+                seen[fn] = m
+    items = list(seen.values())
+    items.sort(key=lambda m: m.get("created_at") or 0, reverse=True)
+    return items
+
+
+def delete_upload(filename: str) -> bool:
+    """Delete a stored upload by filename. Returns True if a file was removed."""
+    try:
+        path = resolve_path(filename)
+    except ValueError:
+        return False
+    removed = path.exists() and path.is_file()
+    if removed:
+        try:
+            path.unlink()
+        except OSError:
+            return False
+    with _metadata_lock:
+        meta = _UPLOAD_META.pop(filename, None)
+        if meta and meta.get("id"):
+            _UPLOAD_META.pop(meta["id"], None)
+    return removed
+
+
 def rebuild_upload_registry() -> int:
     """Rescan UPLOAD_DIR on boot and repopulate the in-memory metadata registry.
 

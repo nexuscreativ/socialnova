@@ -1,9 +1,10 @@
 "use client"
 import { useState, useRef } from "react"
-import { ImagePlus, X, Loader2, UploadCloud, Link2 } from "lucide-react"
+import { ImagePlus, X, Loader2, UploadCloud, Link2, Images } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { uploadImage } from "@/lib/site-content"
+import { MediaLibrary } from "./media-library"
 import { cn } from "@/lib/utils"
 
 interface ImageUploadFieldProps {
@@ -16,12 +17,14 @@ interface ImageUploadFieldProps {
 /**
  * Image field for the CMS editor. Accepts a direct URL, OR uploads a local
  * image through the /api/uploads proxy and stores the returned public URL.
+ * A media library lets editors reuse previously uploaded assets.
  */
 export function ImageUploadField({ label, value, onChange, className }: ImageUploadFieldProps) {
   const [uploading, setUploading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [showUrl, setShowUrl] = useState(false)
   const [manualUrl, setManualUrl] = useState(value)
+  const [libOpen, setLibOpen] = useState(false)
   const fileRef = useRef<HTMLInputElement>(null)
 
   const handleFile = async (file: File | undefined | null) => {
@@ -83,6 +86,10 @@ export function ImageUploadField({ label, value, onChange, className }: ImageUpl
               <Link2 className="h-4 w-4 mr-1.5" />
               Use URL
             </Button>
+            <Button type="button" size="sm" variant="ghost" onClick={() => setLibOpen(true)}>
+              <Images className="h-4 w-4 mr-1.5" />
+              Library
+            </Button>
             {value ? (
               <Button type="button" size="sm" variant="ghost" onClick={() => onChange("")} className="text-[var(--color-error)]">
                 <X className="h-4 w-4" />
@@ -121,6 +128,16 @@ export function ImageUploadField({ label, value, onChange, className }: ImageUpl
         accept="image/*"
         className="hidden"
         onChange={e => handleFile(e.target.files?.[0])}
+      />
+
+      <MediaLibrary
+        open={libOpen}
+        onClose={() => setLibOpen(false)}
+        onSelect={url => {
+          onChange(url)
+          setLibOpen(false)
+          setError(null)
+        }}
       />
     </div>
   )
