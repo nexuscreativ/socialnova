@@ -38,7 +38,7 @@ export const adminNav: NavItem[] = [
   { name: "Brand", href: "/admin/brand", icon: Bot },
   { name: "API", href: "/admin/api", icon: ShieldCheck },
   { name: "Integrations", href: "/admin/integrations", icon: Settings },
-  { name: "Billing", href: "/settings/billing", icon: CreditCard },
+  { name: "Billing", href: "/admin/billing", icon: CreditCard },
   { name: "Audit", href: "/admin/audit", icon: HelpCircle },
   { name: "Settings", href: "/settings", icon: Settings },
 ]

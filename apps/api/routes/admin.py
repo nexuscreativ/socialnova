@@ -479,6 +479,44 @@ async def admin_integrations(
     return {"overall": overall, "integrations": items}
 
 
+# ─── Billing overview ───────────────────────────────────────────────────────
+
+# Canonical cents for MRR estimation — must match lib/pricing.ts
+_TIER_CENTS: Dict[str, int] = {"free": 0, "pro": 2900, "enterprise": 9900, "starter": 2900}
+
+
+@router.get("/billing")
+async def admin_billing(
+    user: User = Depends(require_admin),
+    db: AsyncSession = Depends(get_db),
+):
+    """Platform billing snapshot: users by tier, Stripe customers, estimated MRR."""
+    total_users = int(await db.scalar(select(func.count()).select_from(User)) or 0)
+
+    tier_rows = (await db.execute(select(User.tier, func.count(User.id)).group_by(User.tier))).all()
+    by_tier: Dict[str, int] = {tier or "unknown": int(cnt) for tier, cnt in tier_rows}
+
+    stripe_customers = int(
+        await db.scalar(select(func.count()).select_from(User).where(User.stripe_customer_id.isnot(None))) or 0
+    )
+
+    estimated_mrr_cents = sum(by_tier.get(t, 0) * c for t, c in _TIER_CENTS.items())
+    # tiers not in canonical map count as 0
+
+    stripe_configured = bool((settings.STRIPE_SECRET_KEY or "").strip())
+    stripe_hook = bool((settings.STRIPE_WEBHOOK_SECRET or "").strip())
+
+    return {
+        "total_users": total_users,
+        "by_tier": by_tier,
+        "stripe_customers": stripe_customers,
+        "stripe_configured": stripe_configured,
+        "stripe_webhook": stripe_hook,
+        "estimated_mrr_cents": estimated_mrr_cents,
+        "currency": "USD",
+    }
+
+
 # ─── Audit log ──────────────────────────────────────────────────────────────
 
 @router.get("/audit-logs", response_model=Dict[str, Any])
