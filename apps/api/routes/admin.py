@@ -10,10 +10,13 @@ from pydantic import BaseModel, Field
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from pathlib import Path
+
 from database import get_db
 from deps import require_admin, require_superadmin
 from models import AgentAction, AgentSession, APIKey, APIRequest, AuditLog, Campaign, Content, User
 from services.audit import log_audit_event
+from config import settings
 
 router = APIRouter(prefix="/admin", tags=["Admin"])
 
@@ -327,6 +330,153 @@ async def admin_api_keys(
             for key, email in rows
         ],
     }
+
+
+# ─── Integrations health ────────────────────────────────────────────────────
+
+def _mask(value: str, keep: int = 6) -> str:
+    if not value:
+        return "—"
+    v = value.strip()
+    if len(v) <= keep:
+        return v[:2] + "•••"
+    return v[:keep] + "•••"
+
+
+@router.get("/integrations")
+async def admin_integrations(
+    user: User = Depends(require_admin),
+    db: AsyncSession = Depends(get_db),
+):
+    """Health overview for every third-party integration (admin only).
+
+    Never exposes full secrets — values are masked.  Local checks are cheap
+    (filesystem, DB round-trip); no outbound API calls are made here so the
+    endpoint stays fast and cannot leak timing.
+    """
+    items: List[Dict[str, Any]] = []
+
+    # Database — trivial round-trip
+    try:
+        await db.scalar(select(func.count()).select_from(User))
+        db_status, db_detail = "ok", "PostgreSQL reachable"
+    except Exception as exc:
+        db_status, db_detail = "error", f"DB error: {exc!s:.120s}"
+
+    items.append({
+        "id": "database",
+        "name": "PostgreSQL",
+        "status": db_status,
+        "detail": db_detail,
+        "configured": True,
+        "meta": {"url": _mask(settings.DATABASE_URL, keep=12)},
+    })
+
+    # Redis
+    redis_url = (settings.REDIS_URL or "").strip()
+    if not redis_url or "localhost" in redis_url and settings.APP_ENV == "production":
+        redis_status, redis_detail, redis_configured = "warning", "Not configured (cache disabled)", False
+    else:
+        redis_status, redis_detail, redis_configured = "ok", "Configured", True
+    items.append({
+        "id": "redis",
+        "name": "Redis",
+        "status": redis_status,
+        "detail": redis_detail,
+        "configured": redis_configured,
+        "meta": {"url": _mask(redis_url, keep=12) if redis_url else "—"},
+    })
+
+    # Storage
+    try:
+        p = Path(settings.UPLOAD_DIR)
+        p.mkdir(parents=True, exist_ok=True)
+        ok = p.is_dir()
+        # probe writability with a temp file that is removed immediately
+        if ok:
+            probe = p / ".health_probe"
+            try:
+                probe.write_text("ok")
+                probe.unlink(missing_ok=True)
+            except Exception:
+                ok = False
+        storage_status = "ok" if ok else "error"
+        storage_detail = f"Writable at {p.resolve()}" if ok else f"Not writable: {p}"
+    except Exception as exc:
+        storage_status, storage_detail = "error", f"Storage error: {exc!s:.120s}"
+        p = Path(settings.UPLOAD_DIR)
+    items.append({
+        "id": "storage",
+        "name": "Upload storage",
+        "status": storage_status,
+        "detail": storage_detail,
+        "configured": True,
+        "meta": {"path": str(p), "max_size_mb": settings.MAX_UPLOAD_SIZE // (1024 * 1024)},
+    })
+
+    # Stripe
+    stripe_configured = bool((settings.STRIPE_SECRET_KEY or "").strip())
+    stripe_hook = bool((settings.STRIPE_WEBHOOK_SECRET or "").strip())
+    if stripe_configured:
+        stripe_status, stripe_detail = "ok", "Secret configured" + (" + webhook" if stripe_hook else " (webhook not set)")
+    else:
+        stripe_status, stripe_detail = "warning", "Not configured — billing disabled"
+    items.append({
+        "id": "stripe",
+        "name": "Stripe",
+        "status": stripe_status,
+        "detail": stripe_detail,
+        "configured": stripe_configured,
+        "meta": {"webhook": "configured" if stripe_hook else "not set", "key": _mask(settings.STRIPE_SECRET_KEY) if stripe_configured else "—"},
+    })
+
+    # OpenRouter
+    or_configured = bool((settings.OPENROUTER_API_KEY or "").strip())
+    or_status = "ok" if or_configured else "warning"
+    or_detail = f"Base {settings.OPENROUTER_BASE_URL}" if or_configured else "Not configured — AI features disabled"
+    items.append({
+        "id": "openrouter",
+        "name": "OpenRouter",
+        "status": or_status,
+        "detail": or_detail,
+        "configured": or_configured,
+        "meta": {"key": _mask(settings.OPENROUTER_API_KEY) if or_configured else "—", "base_url": settings.OPENROUTER_BASE_URL},
+    })
+
+    # Email (SMTP)
+    smtp_configured = bool((settings.SMTP_HOST or "").strip())
+    email_from = (settings.EMAIL_FROM or "").strip()
+    if smtp_configured:
+        email_status, email_detail = "ok", f"SMTP {settings.SMTP_HOST}:{settings.SMTP_PORT} as {email_from}"
+    else:
+        email_status, email_detail = "warning", "Not configured — transactional email disabled"
+    items.append({
+        "id": "email",
+        "name": "Email (SMTP)",
+        "status": email_status,
+        "detail": email_detail,
+        "configured": smtp_configured,
+        "meta": {"host": settings.SMTP_HOST or "—", "from": email_from or "—", "user": _mask(settings.SMTP_USER) if settings.SMTP_USER else "—"},
+    })
+
+    # Social webhooks
+    social_configured = bool((settings.SOCIAL_WEBHOOK_SECRET or "").strip())
+    items.append({
+        "id": "social_webhooks",
+        "name": "Social webhooks",
+        "status": "ok" if social_configured else "warning",
+        "detail": "Secret configured" if social_configured else "Not configured — social webhooks unverified",
+        "configured": social_configured,
+        "meta": {"secret": _mask(settings.SOCIAL_WEBHOOK_SECRET) if social_configured else "—"},
+    })
+
+    overall = "ok"
+    if any(i["status"] == "error" for i in items):
+        overall = "error"
+    elif any(i["status"] == "warning" for i in items):
+        overall = "warning"
+
+    return {"overall": overall, "integrations": items}
 
 
 # ─── Audit log ──────────────────────────────────────────────────────────────
