@@ -10,6 +10,7 @@ import {
   ShieldCheck,
   Settings,
   HelpCircle,
+  BookOpen,
   type LucideIcon,
 } from "lucide-react"
 
@@ -40,6 +41,7 @@ export const adminNav: NavItem[] = [
   { name: "Integrations", href: "/admin/integrations", icon: Settings },
   { name: "Billing", href: "/admin/billing", icon: CreditCard },
   { name: "Audit", href: "/admin/audit", icon: HelpCircle },
+  { name: "Docs", href: "/admin/docs", icon: BookOpen },
   { name: "Settings", href: "/settings", icon: Settings },
 ]
 

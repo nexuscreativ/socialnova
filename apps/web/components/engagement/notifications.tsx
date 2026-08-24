@@ -1,5 +1,5 @@
 "use client"
-import { useState } from "react"
+import { useEffect, useState, useRef } from "react"
 import { motion, AnimatePresence } from "framer-motion"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
@@ -101,6 +101,46 @@ export function NotificationCenter({
   )
   const [isOpen, setIsOpen] = useState(false)
   const [filter, setFilter] = useState<"all" | "unread">("all")
+  const [liveConnected, setLiveConnected] = useState(false)
+  const esRef = useRef<EventSource | null>(null)
+
+  useEffect(() => {
+    let closed = false
+    try {
+      const es = new EventSource("/api/v1/events")
+      esRef.current = es
+      es.onopen = () => setLiveConnected(true)
+      es.onerror = () => setLiveConnected(false)
+      es.onmessage = (e) => {
+        if (closed) return
+        try {
+          const data = JSON.parse(e.data)
+          if (data.type === "heartbeat" || data.type === "connected") {
+            if (data.type === "connected") setLiveConnected(true)
+            return
+          }
+          const n: Notification = {
+            id: `live-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
+            type: (data.type as Notification["type"]) || "system",
+            title: data.title || data.type || "New event",
+            description: data.body || data.message || data.detail || "",
+            time: new Date(),
+            read: false,
+            icon: data.type === "agent" ? Bot : data.type === "message" ? MessageSquare : AlertCircle,
+            color: "var(--accent)",
+          }
+          setNotifications(prev => [n, ...prev].slice(0, 50))
+        } catch { /* ignore malformed */ }
+      }
+    } catch {
+      setLiveConnected(false)
+    }
+    return () => {
+      closed = true
+      try { esRef.current?.close() } catch {}
+      setLiveConnected(false)
+    }
+  }, [])
 
   const unreadCount = notifications.filter((n) => !n.read).length
 
@@ -142,8 +182,10 @@ export function NotificationCenter({
         size="icon"
         className="relative"
         onClick={() => setIsOpen(!isOpen)}
+        aria-label="Notifications"
       >
         <Bell className="h-5 w-5" />
+        {liveConnected && <span className="absolute -bottom-0.5 -right-0.5 h-2.5 w-2.5 rounded-full bg-emerald-500 ring-2 ring-white" title="Live" />}
         {unreadCount > 0 && (
           <motion.span
             initial={{ scale: 0 }}
@@ -180,6 +222,7 @@ export function NotificationCenter({
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-2">
                       <CardTitle className="text-base">Notifications</CardTitle>
+                      {liveConnected && <span className="text-[11px] px-1.5 py-0.5 rounded-full bg-emerald-500 text-white">Live</span>}
                       {unreadCount > 0 && (
                         <span
                           className="text-xs px-2 py-0.5 rounded-full"

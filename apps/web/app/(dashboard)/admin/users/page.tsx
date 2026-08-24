@@ -1,12 +1,13 @@
 "use client"
 import { useEffect, useState } from "react"
-import { Loader2, ShieldAlert, Users, Search } from "lucide-react"
+import { Loader2, ShieldAlert, Users, Search, Download } from "lucide-react"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
 import { Pagination } from "@/components/ui/pagination"
 import { useToast } from "@/components/ui/toast"
+import { downloadCSV, downloadJSON } from "@/lib/export"
 
 interface AdminUser {
   id: string
@@ -139,7 +140,7 @@ export default function AdminUsersPage() {
                 <CardDescription>Paginated · {userTotal} total</CardDescription>
               </div>
             </div>
-            <div className="flex gap-2">
+            <div className="flex gap-2 flex-wrap">
               <div className="relative">
                 <Search className="h-4 w-4 absolute left-3 top-1/2 -translate-y-1/2" style={{ color: "var(--text-muted)" }} />
                 <Input
@@ -151,6 +152,24 @@ export default function AdminUsersPage() {
                 />
               </div>
               <Button variant="secondary" size="sm" onClick={onSearch}>Search</Button>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => downloadCSV(`users-${new Date().toISOString().slice(0, 10)}.csv`, users as unknown as Record<string, unknown>[])}
+                disabled={users.length === 0}
+                title="Export current page as CSV"
+              >
+                <Download className="h-4 w-4 mr-1" /> CSV
+              </Button>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => downloadJSON(`users-${new Date().toISOString().slice(0, 10)}.json`, users)}
+                disabled={users.length === 0}
+                title="Export current page as JSON"
+              >
+                JSON
+              </Button>
             </div>
           </div>
         </CardHeader>
