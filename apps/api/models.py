@@ -254,3 +254,16 @@ class ContentRevision(Base):
     action = Column(String(50), default="update")
     created_by = Column(UUID(as_uuid=True), ForeignKey("users.id"))
     created_at = Column(DateTime(timezone=True), default=utcnow, index=True)
+
+
+class PushSubscription(Base):
+    """Web Push subscription (M9). One row per browser/device."""
+
+    __tablename__ = "push_subscriptions"
+
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    user_id = Column(UUID(as_uuid=True), ForeignKey("users.id"), nullable=False, index=True)
+    endpoint = Column(Text, nullable=False, unique=True)
+    p256dh = Column(Text, nullable=False)
+    auth = Column(Text, nullable=False)
+    created_at = Column(DateTime(timezone=True), default=utcnow)

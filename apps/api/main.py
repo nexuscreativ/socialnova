@@ -23,6 +23,8 @@ from routes.uploads import router as uploads_router
 from routes.search import router as search_router
 from routes.admin import router as admin_router
 from routes.site_pages import router as site_pages_router
+from routes.push import router as push_router
+from routes.events import router as events_router
 
 from middleware.metrics import MetricsMiddleware
 from middleware.rate_limit import RateLimitMiddleware
@@ -132,6 +134,8 @@ app.include_router(uploads_router, tags=["Uploads"])
 app.include_router(search_router, tags=["Search"])
 app.include_router(admin_router, tags=["Admin"])
 app.include_router(site_pages_router, tags=["Site Pages"])
+app.include_router(push_router, tags=["Push"])
+app.include_router(events_router, tags=["Events"])
 
 
 # ─── Health / readiness / liveness ──────────────────────────────────────────

@@ -166,6 +166,13 @@ class Settings(BaseSettings):
     ALLOWED_EXTENSIONS: set = {".jpg", ".jpeg", ".png", ".gif", ".webp", ".pdf", ".txt"}
 
     # -------------------------------------------------------------------------
+    # Web Push (M9)
+    # -------------------------------------------------------------------------
+    VAPID_PUBLIC_KEY: str = ""
+    VAPID_PRIVATE_KEY: str = ""
+    VAPID_SUBJECT: str = "mailto:noreply@socialnova.com"
+
+    # -------------------------------------------------------------------------
     # Feature Flags
     # -------------------------------------------------------------------------
     ENABLE_AI_FEATURES: bool = True
