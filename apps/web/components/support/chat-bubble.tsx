@@ -53,6 +53,7 @@ export function SupportChatBubble({
   const [selectedChannel, setSelectedChannel] = useState<"whatsapp" | "telegram" | "voice" | null>(null)
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const inputRef = useRef<HTMLInputElement>(null)
+  const conversationIdRef = useRef<string | null>(null)
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" })
@@ -71,73 +72,37 @@ export function SupportChatBubble({
 
   const handleSend = async () => {
     if (!input.trim()) return
-
+    const text = input
     const userMessage: Message = {
       id: Date.now().toString(),
       role: "user",
-      content: input,
+      content: text,
       timestamp: new Date(),
     }
-
     setMessages((prev) => [...prev, userMessage])
     setInput("")
     setIsTyping(true)
-
-    // Simulate AI response
-    setTimeout(() => {
-      const response = generateAIResponse(input)
+    try {
+      const res = await fetch("/api/v1/chat", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ message: text, conversation_id: conversationIdRef.current }),
+      })
+      const data = await res.json().catch(() => null)
+      if (!res.ok) throw new Error(data?.error ?? "Chat unavailable")
+      if (data.conversation_id) conversationIdRef.current = data.conversation_id
       const assistantMessage: Message = {
         id: (Date.now() + 1).toString(),
         role: "assistant",
-        content: response.content,
+        content: data.response ?? "Sorry, I couldn't process that.",
         timestamp: new Date(),
-        type: response.type,
       }
       setMessages((prev) => [...prev, assistantMessage])
+    } catch (err) {
+      const msg = err instanceof Error && String(err.message).includes("Unauthorized") ? "Please log in to chat with Nova." : "Sorry, I encountered an error. Please try again."
+      setMessages((prev) => [...prev, { id: (Date.now() + 1).toString(), role: "assistant", content: msg, timestamp: new Date() }])
+    } finally {
       setIsTyping(false)
-
-      if (response.needsEscalation) {
-        setShowEscalation(true)
-      }
-    }, 1500)
-  }
-
-  const generateAIResponse = (query: string): { content: string; type?: "text" | "faq" | "escalation" | "gtm"; needsEscalation?: boolean } => {
-    const lowerQuery = query.toLowerCase()
-
-    // FAQ responses
-    if (lowerQuery.includes("pricing") || lowerQuery.includes("cost")) {
-      return {
-        content: "We offer 4 pricing tiers:\n• Free: $0/mo - 10 AI credits\n• Starter: $25/mo - 100 credits\n• Scale: $150/mo - 1,000 credits\n• Agency: $250/mo - Unlimited with BYOK\n\nWould you like to start a free trial?",
-        type: "faq",
-      }
-    }
-
-    if (lowerQuery.includes("gtm") || lowerQuery.includes("launch")) {
-      return {
-        content: "Our GTM Agent can help you create a complete launch strategy! It includes:\n• Market research & competitor analysis\n• Content calendar creation\n• Multi-platform coordination\n• Performance tracking\n\nWould you like me to start generating a GTM strategy for your product?",
-        type: "gtm",
-      }
-    }
-
-    if (lowerQuery.includes("agent") || lowerQuery.includes("ai")) {
-      return {
-        content: "We have 12 specialized AI agents:\n• Nova (Orchestrator) - Coordinates everything\n• Creator - Content generation\n• Timing - Optimal posting\n• Growth - Ad optimization\n• Connector - CRM & leads\n• Guardian - Quality control\n• GTM - Launch strategies\n• MarketResearch - Market analysis\n• LaunchCoordinator - Execution\n• Support - Community management\n• Escalation - Crisis resolution\n• Voice - Audio content\n\nEach agent can be configured for your specific needs.",
-        type: "faq",
-      }
-    }
-
-    if (lowerQuery.includes("help") || lowerQuery.includes("support")) {
-      return {
-        content: "I can help you with:\n• Product questions & demos\n• GTM strategy creation\n• Account setup\n• Technical support\n\nFor immediate assistance, I can connect you with our support team via WhatsApp, Telegram, or voice call.",
-        needsEscalation: true,
-      }
-    }
-
-    // Default response
-    return {
-      content: "I understand you're asking about: " + query + "\n\nLet me help you with that. Could you provide more details, or would you like me to connect you with a human agent for personalized assistance?",
-      needsEscalation: false,
     }
   }
 
