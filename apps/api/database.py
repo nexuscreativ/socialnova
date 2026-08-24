@@ -91,6 +91,16 @@ async def get_db():
 async def init_db():
     async with engine.begin() as conn:
         await conn.run_sync(Base.metadata.create_all)
+        # Backfill columns added after initial create_all (idempotent).
+        # create_all does not add columns to existing tables, so we handle the
+        # M7/M8 schema additions here to avoid 500s on /site/pages/*.
+        try:
+            from sqlalchemy import text as _text
+
+            await conn.execute(_text("ALTER TABLE site_pages ADD COLUMN IF NOT EXISTS ab_test_enabled BOOLEAN DEFAULT FALSE"))
+            await conn.execute(_text("ALTER TABLE site_pages ADD COLUMN IF NOT EXISTS approval_status VARCHAR(20) DEFAULT 'approved'"))
+        except Exception:
+            pass
     await seed_builtin_agents()
     await seed_site_pages()
     await ensure_admin_bootstrap()
