@@ -5,6 +5,7 @@ import { ActivityFeed } from "@/components/dashboard/activity-feed"
 import { CalendarView } from "@/components/dashboard/calendar-view"
 import { PlatformGrid } from "@/components/dashboard/platform-grid"
 import { OnboardingChecklist } from "@/components/engagement/onboarding-checklist"
+import { OnboardingTour } from "@/components/onboarding/tour"
 import { WelcomeBanner } from "@/components/engagement/welcome-banner"
 import { EngagementScore } from "@/components/engagement/engagement-score"
 import { AchievementSystem } from "@/components/engagement/achievements"
@@ -30,6 +31,7 @@ export default function DashboardPage() {
 
   return (
     <div className="space-y-6">
+      <OnboardingTour />
       {/* Welcome Banner */}
       <WelcomeBanner userName="Alex" streak={streak} />
 

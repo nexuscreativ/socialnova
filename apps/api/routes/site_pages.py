@@ -29,6 +29,8 @@ class PageCreate(BaseModel):
     slug: str = Field(..., min_length=1, max_length=100)
     title: str = Field(..., min_length=1, max_length=255)
     description: Optional[str] = Field(None, max_length=500)
+    ab_test_enabled: Optional[bool] = Field(None)
+    approval_status: Optional[str] = Field(None, pattern="^(pending|approved|rejected)$")
 
 class PageUpdate(BaseModel):
     title: Optional[str] = Field(None, max_length=255)
@@ -36,6 +38,8 @@ class PageUpdate(BaseModel):
     nav_label: Optional[str] = Field(None, max_length=100)
     nav_order: Optional[int] = Field(None, ge=0, le=1000)
     status: Optional[str] = Field(None, pattern="^(draft|published|archived)$")
+    ab_test_enabled: Optional[bool] = Field(None)
+    approval_status: Optional[str] = Field(None, pattern="^(pending|approved|rejected)$")
 
 class SectionPayload(BaseModel):
     section_key: str = Field(..., min_length=1, max_length=100)
@@ -72,6 +76,8 @@ def _page_out(page: SitePage, sections: Optional[List[SiteSection]] = None) -> D
         "nav_label": page.nav_label,
         "nav_order": page.nav_order,
         "status": page.status,
+        "ab_test_enabled": bool(getattr(page, "ab_test_enabled", False)),
+        "approval_status": getattr(page, "approval_status", "approved") or "approved",
         "version": page.version,
         "published_payload": page.published_payload or {},
         "draft_payload": page.draft_payload or {},
@@ -261,6 +267,8 @@ async def create_page(
         title=body.title.strip(),
         description=body.description,
         status="draft",
+        ab_test_enabled=bool(getattr(body, "ab_test_enabled", False) or False),
+        approval_status=getattr(body, "approval_status", None) or "approved",
         version=0,
         created_by=user.id,
         updated_by=user.id,
@@ -295,6 +303,10 @@ async def update_page(
         page.nav_order = body.nav_order
     if body.status is not None:
         page.status = body.status
+    if getattr(body, "ab_test_enabled", None) is not None:
+        page.ab_test_enabled = bool(body.ab_test_enabled)
+    if getattr(body, "approval_status", None) is not None:
+        page.approval_status = body.approval_status
     page.updated_by = user.id
     page.updated_at = _now()
     await log_audit_event(

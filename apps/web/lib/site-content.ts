@@ -16,6 +16,8 @@ export interface SiteSection {
   draft_payload: Record<string, unknown>
 }
 
+export type ApprovalStatus = "pending" | "approved" | "rejected"
+
 export interface SitePage {
   id: string
   slug: string
@@ -24,6 +26,8 @@ export interface SitePage {
   nav_label: string | null
   nav_order: number | null
   status: PageStatus
+  ab_test_enabled: boolean
+  approval_status: ApprovalStatus
   version: number
   published_payload: Record<string, unknown>
   draft_payload: Record<string, unknown>
@@ -137,6 +141,8 @@ export async function updatePageMeta(
     nav_label?: string
     nav_order?: number | null
     status?: PageStatus
+    ab_test_enabled?: boolean
+    approval_status?: ApprovalStatus
   },
 ): Promise<SitePage> {
   return request<SitePage>(`/api/site/pages/${encodeURIComponent(slug)}`, {

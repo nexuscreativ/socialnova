@@ -3,6 +3,7 @@ import { WeeklyDigest } from "@/components/engagement/weekly-digest"
 import { TeamLeaderboard } from "@/components/engagement/leaderboard"
 import { ContentPredictions } from "@/components/engagement/predictions"
 import { AnimatedCard, StaggerContainer, StaggerItem } from "@/components/engagement/motion"
+import { SvgAnalytics } from "@/components/analytics/svg-charts"
 
 export default function AnalyticsPage() {
   return (
@@ -30,6 +31,8 @@ export default function AnalyticsPage() {
           <WeeklyDigest />
         </StaggerItem>
       </StaggerContainer>
+
+      <SvgAnalytics />
     </div>
   )
 }

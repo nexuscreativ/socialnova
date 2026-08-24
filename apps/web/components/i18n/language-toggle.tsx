@@ -23,8 +23,11 @@ export function LanguageToggle() {
     const idx = LANGS.findIndex(l => l.code === lang)
     const next = LANGS[(idx + 1) % LANGS.length]
     setLang(next.code)
-    try { localStorage.setItem("socialnova-lang", next.code) } catch {}
-    addToast(`Language: ${next.label} — i18n scaffolding (add translations under lib/i18n/${next.code}.json)`, "success")
+    try {
+      localStorage.setItem("socialnova-lang", next.code)
+      window.dispatchEvent(new CustomEvent("socialnova:lang", { detail: next.code }))
+    } catch {}
+    addToast(`Language: ${next.label}`, "success")
   }
 
   return (

@@ -55,6 +55,8 @@ export default function PageEditorPage({ params }: { params: Promise<{ slug: str
   const [description, setDescription] = useState("")
   const [navLabel, setNavLabel] = useState("")
   const [navOrder, setNavOrder] = useState("")
+  const [abTestEnabled, setAbTestEnabled] = useState(false)
+  const [approvalStatus, setApprovalStatus] = useState<"pending" | "approved" | "rejected">("approved")
 
   // editable payload + sections
   const [payload, setPayload] = useState<Record<string, unknown>>({})
@@ -81,6 +83,8 @@ export default function PageEditorPage({ params }: { params: Promise<{ slug: str
       setDescription(data.description ?? "")
       setNavLabel(data.nav_label ?? "")
       setNavOrder(data.nav_order == null ? "" : String(data.nav_order))
+      setAbTestEnabled(Boolean((data as unknown as Record<string, unknown>).ab_test_enabled))
+      setApprovalStatus(((data as unknown as Record<string, unknown>).approval_status as "pending" | "approved" | "rejected") ?? "approved")
       setPayload({ ...(data.draft_payload ?? {}) })
       setSections((data.sections ?? []).map(s => ({
         section_key: s.section_key,
@@ -197,6 +201,26 @@ export default function PageEditorPage({ params }: { params: Promise<{ slug: str
                 <div>
                   <label htmlFor="cmsNavOrder" className="block text-sm font-medium mb-1.5" style={{ color: "var(--text-primary)" }}>Nav order</label>
                   <Input id="cmsNavOrder" value={navOrder} onChange={e => setNavOrder(e.target.value)} placeholder="1, 2, 3... / empty = hidden" />
+                </div>
+              </div>
+              <div className="grid gap-4 sm:grid-cols-2">
+                <label className="flex items-center gap-2 text-sm cursor-pointer" style={{ color: "var(--text-primary)" }}>
+                  <input type="checkbox" checked={abTestEnabled} onChange={e => setAbTestEnabled(e.target.checked)} className="h-4 w-4 rounded" style={{ accentColor: "var(--accent)" }} />
+                  A/B test enabled (serve variant to 50% of visitors)
+                </label>
+                <div>
+                  <label htmlFor="cmsApproval" className="block text-sm font-medium mb-1.5" style={{ color: "var(--text-primary)" }}>Approval</label>
+                  <select
+                    id="cmsApproval"
+                    value={approvalStatus}
+                    onChange={e => setApprovalStatus(e.target.value as "pending" | "approved" | "rejected")}
+                    className="h-9 w-full rounded-md border bg-transparent px-3 text-sm"
+                    style={{ borderColor: "var(--border-default)", color: "var(--text-primary)" }}
+                  >
+                    <option value="pending">Pending review</option>
+                    <option value="approved">Approved</option>
+                    <option value="rejected">Rejected</option>
+                  </select>
                 </div>
               </div>
             </CardContent>
@@ -371,6 +395,8 @@ export default function PageEditorPage({ params }: { params: Promise<{ slug: str
         description: description || undefined,
         nav_label: navLabel || undefined,
         nav_order: navOrder === "" ? null : Number(navOrder),
+        ab_test_enabled: abTestEnabled,
+        approval_status: approvalStatus,
       })
       await savePageContent(slug, {
         payload: payload ?? {},

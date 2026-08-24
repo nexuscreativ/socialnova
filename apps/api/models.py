@@ -216,6 +216,8 @@ class SitePage(Base):
     nav_label = Column(String(100))
     nav_order = Column(Integer)  # NULL => hidden from nav
     status = Column(String(20), default="draft", index=True)  # draft|published|archived
+    ab_test_enabled = Column(Boolean, default=False)
+    approval_status = Column(String(20), default="approved")  # pending|approved|rejected
     published_payload = Column(JSON, default=dict)
     draft_payload = Column(JSON, default=dict)
     version = Column(Integer, default=0)
