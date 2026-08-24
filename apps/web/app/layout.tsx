@@ -25,7 +25,6 @@ export const metadata: Metadata = {
   title: "SocialNova - Your Social Universe, Autonomously Managed",
   description: "AI-powered social media management with 12 specialized autonomous agents. Plan, publish, engage and sell across 14 platforms.",
   manifest: "/manifest.webmanifest",
-  themeColor: "#F97316",
   appleWebApp: { capable: true, statusBarStyle: "black-translucent", title: "SocialNova" },
   icons: {
     icon: [
