@@ -24,7 +24,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 # ---------------------------------------------------------------------------
 FROM base AS deps
 
-COPY requirements.txt .
+COPY apps/api/requirements.txt ./requirements.txt
 RUN pip install --no-cache-dir --upgrade pip && \
     pip install --no-cache-dir -r requirements.txt
 
@@ -33,7 +33,7 @@ RUN pip install --no-cache-dir --upgrade pip && \
 # ---------------------------------------------------------------------------
 FROM deps AS development
 
-COPY . .
+COPY apps/api/. .
 
 # Install dev dependencies
 RUN pip install --no-cache-dir \
@@ -57,7 +57,7 @@ CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8000", "--reload", "
 # ---------------------------------------------------------------------------
 FROM deps AS production-builder
 
-COPY . .
+COPY apps/api/. .
 
 # Run tests before building production image
 RUN python -c "from config import settings; print('Config OK')"
